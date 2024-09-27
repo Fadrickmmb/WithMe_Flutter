@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
 import 'package:withme_flutter/user_edit_profile.dart';
 import 'package:withme_flutter/user_home_page.dart';
+import 'package:withme_flutter/user_profile_page.dart';
 import 'package:withme_flutter/user_search_page.dart';
 import 'post_model.dart';
 import 'user_post.dart';
 
-class UserProfilePage extends StatefulWidget{
+class UserViewProfile extends StatefulWidget{
   @override
-  State<StatefulWidget> createState() => _UserProfilePage();
+  State<StatefulWidget> createState() => _UserViewProfile();
 }
 
-class _UserProfilePage extends State<UserProfilePage>{
+class _UserViewProfile extends State<UserViewProfile>{
   late String name = '';
   late String followers = '0';
   late String posts = '0';
@@ -41,8 +42,8 @@ class _UserProfilePage extends State<UserProfilePage>{
       );
     } else if (index == 3) {
       Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => UserProfilePage()),
+        context,
+        MaterialPageRoute(builder: (context) => UserProfilePage()),
       );
     }
   }
@@ -104,9 +105,9 @@ class _UserProfilePage extends State<UserProfilePage>{
               Container(
                 padding: EdgeInsets.all(20),
                 child: Text('NAME' + name.toUpperCase(),style: TextStyle(
-                      fontSize: 26,
-                      fontFamily: 'DM Serif Display',
-                  ),
+                  fontSize: 26,
+                  fontFamily: 'DM Serif Display',
+                ),
                 ),
               ),
               Container(
@@ -170,10 +171,7 @@ class _UserProfilePage extends State<UserProfilePage>{
                   ],
                 ),
               ),
-              ElevatedButton(onPressed: (){
-                Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => UserEditProfile(),),);
-              },
+              ElevatedButton(onPressed: (){},
                 style: ButtonStyle(
                   backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
                   shape: WidgetStateProperty.all(
@@ -184,7 +182,7 @@ class _UserProfilePage extends State<UserProfilePage>{
                   padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
                   fixedSize: MaterialStateProperty.all<Size>(Size(200.0, 60.0),),
                 ),
-                child: Text('Edit Profile',
+                child: Text('Follow',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -192,13 +190,13 @@ class _UserProfilePage extends State<UserProfilePage>{
                 ),
               ),
               ListView.builder(
-                    primary: false,
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount:postList.length,
-                      itemBuilder: (context,index){
-                        return UserPost(name: postList[index],);
-                       },
+                primary: false,
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount:postList.length,
+                itemBuilder: (context,index){
+                  return UserPost(name: postList[index],);
+                },
               ),
             ],
           ),
