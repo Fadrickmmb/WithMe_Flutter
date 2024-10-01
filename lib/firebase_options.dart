@@ -88,4 +88,5 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://withme-77c6c-default-rtdb.firebaseio.com',
     storageBucket: 'withme-77c6c.appspot.com',
   );
+
 }

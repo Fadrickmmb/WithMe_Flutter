@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
 import 'package:withme_flutter/user_edit_profile.dart';
 import 'package:withme_flutter/user_home_page.dart';
+import 'package:withme_flutter/user_post_view.dart';
 import 'package:withme_flutter/user_search_page.dart';
 import 'post_model.dart';
 import 'user_post.dart';
@@ -37,7 +38,7 @@ class _UserProfilePage extends State<UserProfilePage>{
     } else if (index == 2) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => UserAddPostPage()),
+        MaterialPageRoute(builder: (context) => UserPostView()),
       );
     } else if (index == 3) {
       Navigator.push(
@@ -170,6 +171,19 @@ class _UserProfilePage extends State<UserProfilePage>{
                   ],
                 ),
               ),
+              Text('Bio',style: TextStyle(
+                fontSize: 26,
+                fontFamily: 'DM Serif Display',
+              ),
+              ),
+              SizedBox(height: 20,),
+              Text('"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."',style: TextStyle(
+                fontSize: 20,
+                fontFamily: 'DM Serif Display',
+              ),
+              ),
+
+              SizedBox(height: 20,),
               ElevatedButton(onPressed: (){
                 Navigator.push(context,
                   MaterialPageRoute(builder: (context) => UserEditProfile(),),);
@@ -190,15 +204,6 @@ class _UserProfilePage extends State<UserProfilePage>{
                     fontSize: 18,
                   ),
                 ),
-              ),
-              ListView.builder(
-                    primary: false,
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount:postList.length,
-                      itemBuilder: (context,index){
-                        return UserPost(name: postList[index],);
-                       },
               ),
             ],
           ),
