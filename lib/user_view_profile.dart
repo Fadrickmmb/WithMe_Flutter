@@ -202,17 +202,6 @@ class _UserViewProfile extends State<UserViewProfile>{
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(type: BottomNavigationBarType.fixed,
-        items: [
-          BottomNavigationBarItem(icon: Image.asset('assets/withme_home.png',height: 30,),label: ''),
-          BottomNavigationBarItem(icon: Image.asset('assets/withme_search.png',height: 30,),label: ''),
-          BottomNavigationBarItem(icon: Image.asset('assets/withme_newpost.png',height: 30,),label: ''),
-          BottomNavigationBarItem(icon: Image.asset('assets/withme_home.png',height: 30,),label: ''),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-      ),
     );
   }
 }
