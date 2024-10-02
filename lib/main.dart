@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:withme_flutter/auth_login.dart';
+import 'package:withme_flutter/auth_register.dart';
 import 'package:withme_flutter/user_profile_page.dart';
 
 void main() {
@@ -40,11 +42,36 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
 
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ElevatedButton(onPressed: (){
-            Navigator.push(context,
-              MaterialPageRoute(builder: (context) => UserProfilePage(),),);
-          }, child: Text('Profile'),),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(onPressed: (){
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => LoginPage(),),);
+              }, child: Text("Login"))
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(onPressed: (){
+                Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => RegisterPage(),),);
+              }, child: Text("Register"))
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(onPressed: (){
+                Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => UserProfilePage(),),);
+              }, child: Text('Profile'),),
+            ],
+          )
+
         ],
 
       ),
