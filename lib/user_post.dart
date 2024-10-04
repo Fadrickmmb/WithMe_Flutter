@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:withme_flutter/user_post_view.dart';
 
 class UserPost extends StatelessWidget {
   final String name;
   final String location='';
-  //final String _postImageUrl;
-  //final String _userPhotoUrl;
+  final String postImageUrl;
+  final String userPhotoUrl;
   final String postDate='';
   final int yummys = 0;
   final int comments = 0;
-  UserPost({super.key, required this.name});
+  final String postId;
+  final String userId;
+
+  UserPost({super.key, required this.name, required this.postImageUrl, required this.userPhotoUrl, required this.postId, required this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -26,17 +30,16 @@ class UserPost extends StatelessWidget {
                   children: [
                     Container(
                       child: CircleAvatar(
-                        radius: 25,
-                        backgroundColor: Colors.white,
-                        child: Icon(Icons.person, size: 30),
+                        backgroundColor: Colors.grey,
+                        radius: 70,
+                        backgroundImage: AssetImage(userPhotoUrl),
                       ),
                     ),
                     SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Post Owner Name' + name,
+                        Text(name,
                           style: TextStyle(
                             fontFamily: 'DM Serif Display',
                             fontSize: 20,
@@ -46,7 +49,7 @@ class UserPost extends StatelessWidget {
                           children: [
                             Icon(Icons.location_on, size: 18),
                             SizedBox(width: 4),
-                            Text('Location Name' + location),
+                            Text(location),
                           ],
                         ),
                       ],
@@ -63,19 +66,32 @@ class UserPost extends StatelessWidget {
                     ),
                   ],
                 ),
-                Container(
-                  margin: EdgeInsets.only(top: 10),
-                  height: 250,
-                  color: Colors.grey[300],
-                  child: Center(
-                    child: Icon(Icons.photo_camera, size: 50),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UserPostView(postId: postId,userId: userId),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    margin: EdgeInsets.only(top: 10),
+                    height: 250,
+                    color: Colors.grey[300],
+                    child: Center(
+                      child: postImageUrl.isNotEmpty
+                          ? Image.network(
+                        postImageUrl,
+                        fit: BoxFit.cover,
+                      )
+                          : Icon(Icons.photo_camera, size: 50),
+                    ),
                   ),
-                ),
-                Container(
+                ),Container(
                   height: 50,
                   child: Row(
                     children: [
-                      // Yummys
                       Expanded(
                         flex: 3,
                         child: Row(
@@ -84,7 +100,7 @@ class UserPost extends StatelessWidget {
                             Image.asset('assets/withme_yummy.png', width: 25),
                             SizedBox(width: 10),
                             Text(
-                              'Yummys' + yummys.toString(),
+                              yummys.toString(),
                               style: TextStyle(fontSize: 12),
                             ),
                           ],
@@ -97,7 +113,7 @@ class UserPost extends StatelessWidget {
                             Image.asset('assets/withme_comment.png', width: 25),
                             SizedBox(width: 10),
                             Text(
-                              'Comments' + comments.toString(),
+                              comments.toString(),
                               style: TextStyle(fontSize: 12),
                             ),
                           ],
@@ -109,7 +125,7 @@ class UserPost extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(
-                              'Date'+ postDate,
+                              postDate,
                               style: TextStyle(fontSize: 12),
                             ),
                           ],

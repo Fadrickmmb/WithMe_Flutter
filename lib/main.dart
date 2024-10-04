@@ -38,15 +38,18 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-      body: Column(
-        children: [
-          ElevatedButton(onPressed: (){
-            Navigator.push(context,
-              MaterialPageRoute(builder: (context) => UserProfilePage(),),);
-          }, child: Text('Profile'),),
-        ],
-
+      body: Center(
+        child:
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ElevatedButton(onPressed: (){
+                Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => UserProfilePage(),),);
+              }, child: Text('Profile'),),
+            ],
+          ),
       ),
     );
   }
