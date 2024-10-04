@@ -11,7 +11,7 @@ class User{
   String? userBio;
   Map<String, Post>? posts;
 
-  User();
+  User.empty();
 
   User.register({
     required this.name,

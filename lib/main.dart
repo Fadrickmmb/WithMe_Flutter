@@ -1,7 +1,12 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:withme_flutter/auth_login.dart';
+import 'package:withme_flutter/auth_register.dart';
 import 'package:withme_flutter/user_profile_page.dart';
 
-void main() {
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -38,18 +43,40 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child:
+
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ElevatedButton(onPressed: (){
+                Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => AuthLogin(),),);
+              }, child: Text("Login"))
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(onPressed: (){
+                Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => AuthRegister(),),);
+              }, child: Text("Register"))
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(onPressed: (){
                 Navigator.push(context,
                   MaterialPageRoute(builder: (context) => UserProfilePage(),),);
               }, child: Text('Profile'),),
             ],
-          ),
+          )
+
+        ],
+
       ),
     );
   }
