@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
 import 'package:withme_flutter/user_edit_profile.dart';
@@ -14,11 +16,85 @@ class UserProfilePage extends StatefulWidget{
 
 class _UserProfilePage extends State<UserProfilePage>{
   late String name = '';
-  late String followers = '0';
-  late String posts = '0';
-  late String yummys = '0';
+  late String followers = '';
+  late String posts = '';
+  late String following = '';
+  late String userBio = '';
+  late String userAvatar = '';
+  late String postId = '';
+  late String userId = '';
   int _selectedIndex = 0;
-  final List postList = ['post1','post2','post3'];
+  late List postList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchInfo();
+  }
+
+  Future<void> _fetchInfo() async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    if (user != null) {
+      final DatabaseReference userRef = FirebaseDatabase.instance.ref().child(
+          'users/${user.uid}');
+      final DatabaseReference postRef = userRef.child('posts');
+
+      try{
+        final DataSnapshot snapshot = await userRef.get();
+
+        if (snapshot.exists) {
+          final userData = snapshot.value as Map?;
+          setState(() {
+            userId = userData?['id'] ?? 'User not found';
+            name = userData?['name'] ?? 'User not found';
+            followers = userData?['numberFollowers'] ?? '0';
+            following = userData?['numberFollowing'] ?? '0';
+            userBio = userData?['userBio'] ?? 'User';
+            userAvatar = userData?['userPhotoUrl'] ?? '';
+          });
+        }
+      } catch(e) {
+        print("error fetching user data $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to load user data."))
+        );
+      }
+
+      try{
+        final DataSnapshot postsSnapshot = await postRef.orderByChild('userId').equalTo(user.uid).get();
+        if (postsSnapshot.exists) {
+          final postsData = postsSnapshot.value as Map?;
+          setState(() {
+            postList = postsData?.values.map((postData) {
+              return Post.partial(
+                name: postData['name'],
+                location: postData['location'],
+                postImageUrl: postData['postImageUrl'],
+                postDate: postData['postDate'],
+                yummys: postData['yummys'],
+                commentsNumber: postData['commentsNumber'],
+                userPhotoUrl: postData['userPhotoUrl'],
+                postId: postData['postId'],
+                userId: postData['userId'],
+              );
+            }).toList().cast<Post>() ?? [];
+          });
+        }
+
+      } catch(e) {
+        print("error fetching user data $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to load user's posts."))
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("user not logged in."))
+      );
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -38,7 +114,7 @@ class _UserProfilePage extends State<UserProfilePage>{
     } else if (index == 2) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => UserPostView()),
+        MaterialPageRoute(builder: (context) => UserPostView(userId: userId, postId: postId,)),
       );
     } else if (index == 3) {
       Navigator.push(
@@ -66,7 +142,7 @@ class _UserProfilePage extends State<UserProfilePage>{
               //header
               Container(
                 alignment: Alignment.center,
-                padding: EdgeInsets.fromLTRB(0,30,0,0),
+                padding: EdgeInsets.fromLTRB(0,40,0,0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -91,31 +167,22 @@ class _UserProfilePage extends State<UserProfilePage>{
                   ],
                 ),
               ),
-              //insert content here
               Container(
                 alignment: Alignment.center,
                 padding: EdgeInsets.fromLTRB(0, 50, 0, 0),
                 child: CircleAvatar(
-                  backgroundColor: Color(0xFF1A2F31),
+                  backgroundColor: Colors.grey,
                   radius: 70,
-                  backgroundImage: AssetImage('assets/small_logo.png'),
+                  backgroundImage: AssetImage(userAvatar),
                 ),
               ),
               SizedBox(height: 20,),
               Container(
                 padding: EdgeInsets.all(20),
-                child: Text('NAME' + name.toUpperCase(),style: TextStyle(
+                child: Text(name.toUpperCase(),style: TextStyle(
                       fontSize: 26,
                       fontFamily: 'DM Serif Display',
                   ),
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.all(20),
-                child: Text('Write your bio here.',style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'DM Serif Display',
-                ),
                 ),
               ),
               Container(
@@ -126,14 +193,16 @@ class _UserProfilePage extends State<UserProfilePage>{
                     Expanded(
                       child: Column(
                         children: [
-                          Text(followers,style: TextStyle(
-                            fontSize: 20,
-                            fontFamily: 'DM Serif Display',
+                          Text(followers,style:
+                            TextStyle(
+                              fontSize: 20,
+                              fontFamily: 'DM Serif Display',
+                            ),
                           ),
-                          ),
-                          Text('Followers',style: TextStyle(
-                            fontSize: 16,
-                          ),
+                          Text('Followers',style:
+                            TextStyle(
+                              fontSize: 16,
+                            ),
                           ),
                         ],
                       ),
@@ -156,7 +225,7 @@ class _UserProfilePage extends State<UserProfilePage>{
                     Expanded(
                       child: Column(
                         children: [
-                          Text(yummys,style: TextStyle(
+                          Text(following,style: TextStyle(
                             fontSize: 20,
                             fontFamily: 'DM Serif Display',
                           ),
@@ -177,12 +246,11 @@ class _UserProfilePage extends State<UserProfilePage>{
               ),
               ),
               SizedBox(height: 20,),
-              Text('"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."',style: TextStyle(
+              Text(userBio,style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'DM Serif Display',
               ),
               ),
-
               SizedBox(height: 20,),
               ElevatedButton(onPressed: (){
                 Navigator.push(context,
@@ -205,6 +273,18 @@ class _UserProfilePage extends State<UserProfilePage>{
                   ),
                 ),
               ),
+              ListView.builder(
+                primary: false,
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount:postList.length,
+                itemBuilder: (context,index) {
+                  final post = postList[index];
+                  return UserPost(name: post.name ?? 'Unknown', postImageUrl: post.postImageUrl ?? '',
+                    userPhotoUrl: post.userPhotoUrl ?? '', postId: postId ??'',userId: userId ?? '',
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -214,7 +294,7 @@ class _UserProfilePage extends State<UserProfilePage>{
           BottomNavigationBarItem(icon: Image.asset('assets/withme_home.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_search.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_newpost.png',height: 30,),label: ''),
-          BottomNavigationBarItem(icon: Image.asset('assets/withme_home.png',height: 30,),label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.person,size: 36,),label: ''),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.grey,
