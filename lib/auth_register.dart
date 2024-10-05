@@ -51,7 +51,7 @@ class _AuthRegisterState extends State<AuthRegister> {
       'name': _usernameController.text,
       'email': _emailController.text,
     });
-}
+  }
 
   void showError(String errorMessage) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(

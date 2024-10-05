@@ -10,6 +10,7 @@ class AuthLogin extends StatefulWidget {
 }
 
 class _AuthLoginState extends State<AuthLogin> {
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _userDatabase = FirebaseDatabase.instance.ref().child('users');
   final DatabaseReference _adminDatabase = FirebaseDatabase.instance.ref().child('admin');
@@ -64,6 +65,7 @@ class _AuthLoginState extends State<AuthLogin> {
       });
     }
   }
+
 
   void checkUserRole(String email) async {
     try {
