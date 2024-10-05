@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:withme_flutter/user_profile_page.dart';
 
 class UserHomePage extends StatefulWidget{
   @override
@@ -8,7 +9,20 @@ class UserHomePage extends StatefulWidget{
 class _UserHomePage extends State<UserHomePage>{
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    throw UnimplementedError();
+    return Scaffold(
+      body: Center(
+        child:
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ElevatedButton(onPressed: (){
+              Navigator.push(context,
+                MaterialPageRoute(builder: (context) => UserProfilePage(),),);
+            }, child: Text('Profile'),),
+          ],
+        ),
+      ),
+    );
   }
 }

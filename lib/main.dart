@@ -43,6 +43,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -51,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
             children: [
               ElevatedButton(onPressed: (){
                 Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => LoginPage(),),);
+                  MaterialPageRoute(builder: (context) => AuthLogin(),),);
               }, child: Text("Login"))
             ],
           ),
@@ -60,7 +61,7 @@ class _MyHomePageState extends State<MyHomePage> {
             children: [
               ElevatedButton(onPressed: (){
                 Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => RegisterPage(),),);
+                  MaterialPageRoute(builder: (context) => AuthRegister(),),);
               }, child: Text("Register"))
             ],
           ),

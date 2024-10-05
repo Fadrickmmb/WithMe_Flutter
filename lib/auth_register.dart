@@ -3,14 +3,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:withme_flutter/user_model.dart' as UserModel;
 
-class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+import 'auth_login.dart';
+
+class AuthRegister extends StatefulWidget {
+  const AuthRegister({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  State<AuthRegister> createState() => _AuthRegisterState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _AuthRegisterState extends State<AuthRegister> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref("users");
 
@@ -18,20 +20,38 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-
   void registerUser() async{
-
     UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
       email: _emailController.text,
       password: _passwordController.text,
     );
-
     User? user = userCredential.user;
+    if (user != null) {
+      await saveUserToDatabase(user);
 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('You are registered!'),
+        ),
+      );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AuthLogin(),
+          ),
+        );
+      }
   }
 
-
-
+  Future<void> saveUserToDatabase(User user) async {
+    final DatabaseReference dbRef = FirebaseDatabase.instance.ref().child('users/${user.uid}');
+    await dbRef.set({
+      'uuid': user.uid,
+      'name': _usernameController.text,
+      'email': _emailController.text,
+    });
+  }
 
   void showError(String errorMessage) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(

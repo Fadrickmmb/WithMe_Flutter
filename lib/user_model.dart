@@ -11,18 +11,12 @@ class User {
   String? userBio;
   Map<String, Post>? posts;
 
+  User.empty();
 
-  User({
+  User.register({
     required this.name,
     required this.email,
-    required this.id,
-    this.numberPosts,
-    this.numberFollowers,
-    this.numberFollowing,
-    this.userPhotoUrl,
-    this.userBio,
-    Map<String, Post>? posts,
-  }) : posts = posts ?? {};
+    required this.id});
 
   User.full({
     required this.name,
@@ -36,21 +30,7 @@ class User {
     required this.posts});
 
   Map<String, Post>? getPosts() => posts;
-
   setPosts(Map<String, Post> posts) => this.posts = posts;
-
-
-  User.empty()
-      : name = '',
-        email = '',
-        id = '',
-        posts = {},
-        numberPosts = 0,
-        numberFollowers = 0,
-        numberFollowing = 0,
-        userPhotoUrl = '',
-        userBio = '';
-
 
   String? get userBioValue => userBio;
   set userBioValue(String? bio) {
@@ -86,6 +66,3 @@ class User {
   }
 
 }
-  class Post {
-
-  }

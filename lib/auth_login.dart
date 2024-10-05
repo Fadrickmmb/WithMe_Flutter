@@ -4,12 +4,13 @@ import 'package:firebase_database/firebase_database.dart';
 import 'admin_home_page.dart';
 import 'user_home_page.dart';
 
-class LoginPage extends StatefulWidget {
+class AuthLogin extends StatefulWidget {
   @override
-  _LoginPageState createState() => _LoginPageState();
+  _AuthLoginState createState() => _AuthLoginState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _AuthLoginState extends State<AuthLogin> {
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _userDatabase = FirebaseDatabase.instance.ref().child('users');
   final DatabaseReference _adminDatabase = FirebaseDatabase.instance.ref().child('admin');
@@ -18,6 +19,19 @@ class _LoginPageState extends State<LoginPage> {
   TextEditingController passwordController = TextEditingController();
 
   bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoggedInUser();
+  }
+
+  void _checkLoggedInUser() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      checkUserRole(user.email!);
+    }
+  }
 
   void loginUser() async {
     String email = emailController.text.trim();
@@ -52,26 +66,27 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void checkUserRole(String email) {
-    _adminDatabase.orderByChild('email').equalTo(email).once().then((snapshot) {
-      if (snapshot.snapshot.exists) {
+
+  void checkUserRole(String email) async {
+    try {
+      final adminSnapshot = await _adminDatabase.orderByChild('email').equalTo(email).get();
+      if (adminSnapshot.exists) {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AdminHomePage()));
       } else {
-        _userDatabase.orderByChild('email').equalTo(email).once().then((snapshot) {
-          if (snapshot.snapshot.exists) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserHomePage()));
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('No account found with this email'),
-            ));
-          }
-        });
+        final userSnapshot = await _userDatabase.orderByChild('email').equalTo(email).get();
+        if (userSnapshot.exists) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserHomePage()));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('No account found with this email'),
+          ));
+        }
       }
-    }).catchError((error) {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error checking admin table'),
+        content: Text('Error checking user role: $e'),
       ));
-    });
+    }
   }
 
   @override
@@ -110,6 +125,7 @@ class _LoginPageState extends State<LoginPage> {
             SizedBox(height: 10),
             GestureDetector(
               onTap: () {
+                // add forgot password function here
               },
               child: Text(
                 'Forgot Password?',
