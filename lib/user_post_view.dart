@@ -28,13 +28,16 @@ class _UserPostView extends State<UserPostView> {
   late int yummys = 0;
   late int commentsNumber = 0;
   late String postId = '';
-  Map<String, Comment>? comments; //String is the comment id and Comment is the object comment
+  late String date = '';
+  late String text = '';
+  late List<Comment> comments = []; //String is the comment id and Comment is the object comment
   int _selectedIndex = 0;
 
   void initState(){
     super.initState();
     _fetchUserInfo();
     _fetchPostInfo();
+    _fetchCommentInfo();
   }
   
   Future<void> _fetchUserInfo() async {
@@ -54,24 +57,48 @@ class _UserPostView extends State<UserPostView> {
   }
   
   Future<void> _fetchPostInfo() async {
-    final DatabaseReference userRef = FirebaseDatabase.instance.ref().child('user/${widget.userId}');
-    final DatabaseReference postRef = userRef.child('posts');
+    final DatabaseReference postRef = FirebaseDatabase.instance.ref().child('user/${widget.userId}/posts/${widget.postId}');
+
     try{
       final DataSnapshot snapshot = await postRef.get();
       if(snapshot.exists) {
         final postData = snapshot.value as Map?;
         setState(() {
           content = postData?['content'] ?? '';
-          postImageUrl = postData?['pstImageUrl'] ?? '';
+          userPhotoUrl = postData?['userPhotUrl'] ?? '';
+          postImageUrl = postData?['postImageUrl'] ?? '';
           location = postData?['location'] ?? '';
           postDate = postData?['postDate'] ?? '';
           yummys = postData?['yummys'] ?? '';
-          commentsNumber = postData?['commentNumbers'] ?? '';
-          comments = postData?['comments'] != null ? Map<String, Comment>.from(postData!['comments']) : {};
+          commentsNumber = postData?['commentsNumber'] ?? '';
         });
       }
     } catch(e) {
       print("Error fetching post detail: $e");
+    }
+  }
+
+  Future<void> _fetchCommentInfo() async {
+    final DatabaseReference commentsRef = FirebaseDatabase.instance.ref().child('user/${widget.userId}/posts/${widget.postId}/comments');
+
+    try{
+      final DataSnapshot commentSnapshot = await commentsRef.get();
+      if(commentSnapshot.exists) {
+        final commentData = commentSnapshot.value as Map?;
+        if(commentData != null) {
+          setState(() {
+            comments = commentData.values.map((data){
+              return Comment.partial(
+                  name: data['name'] ?? '',
+                  date: data['date'] ?? '',
+                  text: data['text']  ?? '',
+              );
+            }).toList();
+          });
+        }
+      }
+    } catch(e) {
+      print("Error fetching comment detail: $e");
     }
   }
 
@@ -145,9 +172,10 @@ class _UserPostView extends State<UserPostView> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          radius: 25,
                           backgroundColor: Colors.grey,
-                          backgroundImage: AssetImage(userPhotoUrl),
+                          radius: 25,
+                          backgroundImage: userPhotoUrl.isNotEmpty ?
+                          NetworkImage(userPhotoUrl) : AssetImage('assets/small_logo.png'),
                         ),
                         const SizedBox(width: 10),
                         Column(
@@ -194,7 +222,7 @@ class _UserPostView extends State<UserPostView> {
                             children: [
                               Image.asset('assets/withme_yummy.png', width: 25, height: 25),
                               const SizedBox(width: 10),
-                              Text("Yummys", style: TextStyle(fontSize: 12)),
+                              Text(yummys.toString(), style: TextStyle(fontSize: 12)),
                             ],
                           ),
                         ),
@@ -204,7 +232,7 @@ class _UserPostView extends State<UserPostView> {
                             children: [
                               Image.asset('assets/withme_comment.png', width: 25, height: 25),
                               const SizedBox(width: 10),
-                              Text("Comments", style: TextStyle(fontSize: 12)),
+                              Text(commentsNumber.toString(), style: TextStyle(fontSize: 12)),
                             ],
                           ),
                         ),
@@ -220,10 +248,13 @@ class _UserPostView extends State<UserPostView> {
                     const SizedBox(height: 10),
                     ListView.builder(
                       shrinkWrap: true,
-                      itemCount: 5,
+                      itemCount: comments.length,
                       itemBuilder: (context, index) {
-                        return ListTile(
-                          title: Text("Comment $index"),
+                        final comment = comments[index];
+                        return Comment.partial(
+                            name: comment.name ?? '',
+                            text: comment.text ?? '',
+                            date: comment.date ?? '',
                         );
                       },
                     ),

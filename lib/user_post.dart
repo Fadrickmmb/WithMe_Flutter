@@ -3,16 +3,26 @@ import 'package:withme_flutter/user_post_view.dart';
 
 class UserPost extends StatelessWidget {
   final String name;
-  final String location='';
+  final String location;
   final String postImageUrl;
   final String userPhotoUrl;
-  final String postDate='';
-  final int yummys = 0;
-  final int comments = 0;
+  final String postDate;
+  final int yummys;
+  final int comments;
   final String postId;
   final String userId;
 
-  UserPost({super.key, required this.name, required this.postImageUrl, required this.userPhotoUrl, required this.postId, required this.userId});
+  UserPost.partial({
+    required this.postId,
+    required this.userId,
+    required this.name,
+    required this.postImageUrl,
+    required this.userPhotoUrl,
+    required this.postDate,
+    required this.yummys,
+    required this.comments,
+    required this.location,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,8 +41,10 @@ class UserPost extends StatelessWidget {
                     Container(
                       child: CircleAvatar(
                         backgroundColor: Colors.grey,
-                        radius: 70,
-                        backgroundImage: AssetImage(userPhotoUrl),
+                        radius: 25,
+                        backgroundImage: userPhotoUrl.isNotEmpty ?
+                            NetworkImage(userPhotoUrl) :
+                            AssetImage('assets/default_avatar.png') as ImageProvider,
                       ),
                     ),
                     SizedBox(width: 10),
@@ -81,18 +93,16 @@ class UserPost extends StatelessWidget {
                     color: Colors.grey[300],
                     child: Center(
                       child: postImageUrl.isNotEmpty
-                          ? Image.network(
-                        postImageUrl,
-                        fit: BoxFit.cover,
-                      )
+                          ? Image.network(postImageUrl, fit: BoxFit.cover)
                           : Icon(Icons.photo_camera, size: 50),
+                      ),
                     ),
                   ),
-                ),Container(
-                  height: 50,
-                  child: Row(
-                    children: [
-                      Expanded(
+                  Container(
+                    height: 50,
+                    child: Row(
+                      children: [
+                        Expanded(
                         flex: 3,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.start,

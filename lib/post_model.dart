@@ -41,8 +41,6 @@ class Post {
     required this.postId,
   });
 
-
-
   Map<String, Comment>? getComments() => comments;
   setComments(Map<String, Comment> comments) => this.comments = comments;
 }
