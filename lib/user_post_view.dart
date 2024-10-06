@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:withme_flutter/comment_design.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
+import 'package:withme_flutter/user_edit_profile.dart';
 import 'package:withme_flutter/user_home_page.dart';
 import 'package:withme_flutter/user_profile_page.dart';
 import 'package:withme_flutter/user_search_page.dart';
@@ -21,57 +23,75 @@ class UserPostView extends StatefulWidget {
 class _UserPostView extends State<UserPostView> {
   late String content ='';
   late String postImageUrl = '';
-  late String name = '';
+  late String ownername = '';
   late String userPhotoUrl = '';
   late String location = '';
   late String postDate = '';
   late int yummys = 0;
   late int commentsNumber = 0;
   late String postId = '';
-  Map<String, Comment>? comments; //String is the comment id and Comment is the object comment
+  late String date = '';
+  late String text = '';
+  late List<Comment> comments = []; //String is the comment id and Comment is the object comment
   int _selectedIndex = 0;
 
   void initState(){
     super.initState();
-    _fetchUserInfo();
     _fetchPostInfo();
+    _fetchCommentInfo();
+    print('Received userId: ${widget.userId}');
+    print('Received postId: ${widget.postId}');
   }
-  
-  Future<void> _fetchUserInfo() async {
-    final DatabaseReference userRef = FirebaseDatabase.instance.ref().child('user/${widget.userId}');
-    try{
-      final DataSnapshot snapshot = await userRef.get();
-      if(snapshot.exists) {
-        final userData = snapshot.value as Map?;
-        setState(() {
-          name = userData?['name'] ?? 'Unknown';
-          userPhotoUrl = userData?['userPhotoUrl'] ?? '';
-        });
+
+  Future<void> _fetchPostInfo() async {
+    final DatabaseReference postRef = FirebaseDatabase.instance.ref().child('users/${widget.userId}/posts/${widget.postId}');
+
+    try {
+      final DataSnapshot snapshot = await postRef.get();
+      if (snapshot.exists) {
+        final postData = snapshot.value as Map?;
+        if(postData != null){
+          setState(() {
+            ownername = postData?['name'] ?? '';
+            content = postData?['content'] ?? '';
+            postImageUrl = postData?['postImageUrl'] ?? '';
+            userPhotoUrl = postData?['userImageUrl'] ?? '';
+            location = postData?['location'] ?? '';
+            postDate = postData?['postDate'] ?? '';
+            yummys = int.tryParse(postData?['yummys']?.toString() ?? '0') ?? 0;
+            commentsNumber = int.tryParse(postData?['commentsNumber']?.toString() ?? '0') ?? 0;
+          });
+        }
+      } else {
+        print('Post not found.');
       }
-    } catch(e) {
-      print("Error fetching user info: $e");
+    } catch (e) {
+      print("Error fetching post detail: $e");
     }
   }
-  
-  Future<void> _fetchPostInfo() async {
-    final DatabaseReference userRef = FirebaseDatabase.instance.ref().child('user/${widget.userId}');
-    final DatabaseReference postRef = userRef.child('posts');
-    try{
-      final DataSnapshot snapshot = await postRef.get();
-      if(snapshot.exists) {
-        final postData = snapshot.value as Map?;
-        setState(() {
-          content = postData?['content'] ?? '';
-          postImageUrl = postData?['pstImageUrl'] ?? '';
-          location = postData?['location'] ?? '';
-          postDate = postData?['postDate'] ?? '';
-          yummys = postData?['yummys'] ?? '';
-          commentsNumber = postData?['commentNumbers'] ?? '';
-          comments = postData?['comments'] != null ? Map<String, Comment>.from(postData!['comments']) : {};
-        });
+
+  Future<void> _fetchCommentInfo() async {
+    final DatabaseReference commentsRef = FirebaseDatabase.instance.ref().child('users/${widget.userId}/posts/${widget.postId}/comments');
+
+    try {
+      final DataSnapshot commentSnapshot = await commentsRef.get();
+      if (commentSnapshot.exists) {
+        final commentData = commentSnapshot.value as Map<dynamic, dynamic>?;
+        if (commentData != null) {
+          setState(() {
+            comments = commentData.values.map((comment) {
+              final commentMap = comment as Map<dynamic, dynamic>;
+              return Comment.partial(
+                name: commentMap['name'] ?? 'Anonymous',
+                date: commentMap['date'] ?? 'Unknown date',
+                text: commentMap['text'] ?? 'No content',
+              );
+            }).toList();
+          });
+        }
       }
-    } catch(e) {
-      print("Error fetching post detail: $e");
+    } catch (e) {
+      print("Error fetching comment detail: $e");
     }
   }
 
@@ -145,16 +165,17 @@ class _UserPostView extends State<UserPostView> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          radius: 25,
                           backgroundColor: Colors.grey,
-                          backgroundImage: AssetImage(userPhotoUrl),
+                          radius: 25,
+                          backgroundImage: userPhotoUrl.isNotEmpty ?
+                          NetworkImage(userPhotoUrl) : AssetImage('assets/small_logo.png') as ImageProvider,
                         ),
                         const SizedBox(width: 10),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              name,
+                              ownername,
                               style: TextStyle(
                                 fontFamily: 'DM Serif Display',
                                 fontSize: 20,
@@ -194,7 +215,7 @@ class _UserPostView extends State<UserPostView> {
                             children: [
                               Image.asset('assets/withme_yummy.png', width: 25, height: 25),
                               const SizedBox(width: 10),
-                              Text("Yummys", style: TextStyle(fontSize: 12)),
+                              Text(yummys.toString(), style: TextStyle(fontSize: 12)),
                             ],
                           ),
                         ),
@@ -204,7 +225,7 @@ class _UserPostView extends State<UserPostView> {
                             children: [
                               Image.asset('assets/withme_comment.png', width: 25, height: 25),
                               const SizedBox(width: 10),
-                              Text("Comments", style: TextStyle(fontSize: 12)),
+                              Text(commentsNumber.toString(), style: TextStyle(fontSize: 12)),
                             ],
                           ),
                         ),
@@ -220,12 +241,36 @@ class _UserPostView extends State<UserPostView> {
                     const SizedBox(height: 10),
                     ListView.builder(
                       shrinkWrap: true,
-                      itemCount: 5,
+                      itemCount: comments.length,
                       itemBuilder: (context, index) {
-                        return ListTile(
-                          title: Text("Comment $index"),
+                        final comment = comments[index];
+                        return CommentWidget(
+                            name: comment.name ?? 'Anonymous',
+                            text: comment.text ?? 'No comment.',
+                            date: comment.date ?? 'Unknown date',
                         );
                       },
+                    ),
+                    SizedBox(height: 40,),
+                    ElevatedButton(onPressed: (){
+                      Navigator.pop(context);
+                    },
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
+                        shape: WidgetStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
+                        fixedSize: MaterialStateProperty.all<Size>(Size(200.0, 60.0),),
+                      ),
+                      child: Text('Back',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                        ),
+                      ),
                     ),
                   ],
                 ),
