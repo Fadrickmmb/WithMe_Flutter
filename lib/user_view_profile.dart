@@ -99,7 +99,6 @@ class _UserViewProfile extends State<UserViewProfile>{
                   postId: postData['postId'],
                   userId: postData['userId'],
                   content: postData['content'],
-                  comments: {},
                 );
               }).toList().cast<Post>() ?? [];
             });

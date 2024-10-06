@@ -86,6 +86,7 @@ class _UserProfilePage extends State<UserProfilePage>{
           if(postsData != null) {
             setState(() {
               postList = postsData?.values.map((postData) {
+                print('Post ID from Firebase: ${postData['postId']}');
                 return Post.partial(
                   name: postData['name'],
                   location: postData['location'],
@@ -136,7 +137,7 @@ class _UserProfilePage extends State<UserProfilePage>{
     } else if (index == 2) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => UserPostView(userId: userId, postId: postId,)),
+        MaterialPageRoute(builder: (context) => UserEditProfile()),
       );
     } else if (index == 3) {
       Navigator.push(
@@ -274,7 +275,7 @@ class _UserProfilePage extends State<UserProfilePage>{
                 fontFamily: 'DM Serif Display',
               ),
               ),
-              SizedBox(height: 20,),
+              SizedBox(height: 60,),
               ElevatedButton(onPressed: (){
                 Navigator.push(context,
                   MaterialPageRoute(builder: (context) => UserEditProfile(),),);
@@ -300,19 +301,34 @@ class _UserProfilePage extends State<UserProfilePage>{
                 primary: false,
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
-                itemCount:postList.length,
-                itemBuilder: (context,index) {
+                itemCount: postList.length,
+                itemBuilder: (context, index) {
                   final post = postList[index];
-                  return UserPost.partial(
-                    postId: post.postId ?? '',
-                    userId: post.userId ?? '',
-                    name: post.name ?? 'Unknown',
-                    postImageUrl: post.postImageUrl ?? 'assets/small.logo.png',
-                    userPhotoUrl: post.userPhotoUrl ?? 'assets/small_logo.png',
-                    yummys: post.yummys ?? 0,
-                    location: post.location ?? 'No location provided',
-                    postDate: post.postDate ?? 'No date provided',
-                    comments: post.commentsNumber ?? 0,
+                  print('Post ID: ${post.postId}');
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserPostView(
+                            userId: post.userId,
+                            postId: post.postId,
+                          ),
+                        ),
+                      );
+                    },
+                    child: UserPost.partial(
+                      postId: post.postId ?? '',
+                      userId: post.userId ?? '',
+                      name: post.name ?? 'Unknown',
+                      postImageUrl: post.postImageUrl ?? 'assets/small.logo.png',
+                      userPhotoUrl: post.userPhotoUrl ?? 'assets/small_logo.png',
+                      yummys: post.yummys ?? 0,
+                      location: post.location ?? 'No location provided',
+                      postDate: post.postDate ?? 'No date provided',
+                      comments: post.commentsNumber ?? 0,
+                    ),
                   );
                 },
               ),

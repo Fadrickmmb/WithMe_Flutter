@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:withme_flutter/comment_design.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
+import 'package:withme_flutter/user_edit_profile.dart';
 import 'package:withme_flutter/user_home_page.dart';
 import 'package:withme_flutter/user_profile_page.dart';
 import 'package:withme_flutter/user_search_page.dart';
@@ -21,7 +23,7 @@ class UserPostView extends StatefulWidget {
 class _UserPostView extends State<UserPostView> {
   late String content ='';
   late String postImageUrl = '';
-  late String name = '';
+  late String ownername = '';
   late String userPhotoUrl = '';
   late String location = '';
   late String postDate = '';
@@ -35,69 +37,60 @@ class _UserPostView extends State<UserPostView> {
 
   void initState(){
     super.initState();
-    _fetchUserInfo();
     _fetchPostInfo();
     _fetchCommentInfo();
+    print('Received userId: ${widget.userId}');
+    print('Received postId: ${widget.postId}');
   }
-  
-  Future<void> _fetchUserInfo() async {
-    final DatabaseReference userRef = FirebaseDatabase.instance.ref().child('user/${widget.userId}');
-    try{
-      final DataSnapshot snapshot = await userRef.get();
-      if(snapshot.exists) {
-        final userData = snapshot.value as Map?;
-        setState(() {
-          name = userData?['name'] ?? 'Unknown';
-          userPhotoUrl = userData?['userPhotoUrl'] ?? '';
-        });
-      }
-    } catch(e) {
-      print("Error fetching user info: $e");
-    }
-  }
-  
-  Future<void> _fetchPostInfo() async {
-    final DatabaseReference postRef = FirebaseDatabase.instance.ref().child('user/${widget.userId}/posts/${widget.postId}');
 
-    try{
+  Future<void> _fetchPostInfo() async {
+    final DatabaseReference postRef = FirebaseDatabase.instance.ref().child('users/${widget.userId}/posts/${widget.postId}');
+
+    try {
       final DataSnapshot snapshot = await postRef.get();
-      if(snapshot.exists) {
+      if (snapshot.exists) {
         final postData = snapshot.value as Map?;
-        setState(() {
-          content = postData?['content'] ?? '';
-          userPhotoUrl = postData?['userPhotUrl'] ?? '';
-          postImageUrl = postData?['postImageUrl'] ?? '';
-          location = postData?['location'] ?? '';
-          postDate = postData?['postDate'] ?? '';
-          yummys = postData?['yummys'] ?? '';
-          commentsNumber = postData?['commentsNumber'] ?? '';
-        });
+        if(postData != null){
+          setState(() {
+            ownername = postData?['name'] ?? '';
+            content = postData?['content'] ?? '';
+            postImageUrl = postData?['postImageUrl'] ?? '';
+            userPhotoUrl = postData?['userImageUrl'] ?? '';
+            location = postData?['location'] ?? '';
+            postDate = postData?['postDate'] ?? '';
+            yummys = int.tryParse(postData?['yummys']?.toString() ?? '0') ?? 0;
+            commentsNumber = int.tryParse(postData?['commentsNumber']?.toString() ?? '0') ?? 0;
+          });
+        }
+      } else {
+        print('Post not found.');
       }
-    } catch(e) {
+    } catch (e) {
       print("Error fetching post detail: $e");
     }
   }
 
   Future<void> _fetchCommentInfo() async {
-    final DatabaseReference commentsRef = FirebaseDatabase.instance.ref().child('user/${widget.userId}/posts/${widget.postId}/comments');
+    final DatabaseReference commentsRef = FirebaseDatabase.instance.ref().child('users/${widget.userId}/posts/${widget.postId}/comments');
 
-    try{
+    try {
       final DataSnapshot commentSnapshot = await commentsRef.get();
-      if(commentSnapshot.exists) {
-        final commentData = commentSnapshot.value as Map?;
-        if(commentData != null) {
+      if (commentSnapshot.exists) {
+        final commentData = commentSnapshot.value as Map<dynamic, dynamic>?;
+        if (commentData != null) {
           setState(() {
-            comments = commentData.values.map((data){
+            comments = commentData.values.map((comment) {
+              final commentMap = comment as Map<dynamic, dynamic>;
               return Comment.partial(
-                  name: data['name'] ?? '',
-                  date: data['date'] ?? '',
-                  text: data['text']  ?? '',
+                name: commentMap['name'] ?? 'Anonymous',
+                date: commentMap['date'] ?? 'Unknown date',
+                text: commentMap['text'] ?? 'No content',
               );
             }).toList();
           });
         }
       }
-    } catch(e) {
+    } catch (e) {
       print("Error fetching comment detail: $e");
     }
   }
@@ -175,14 +168,14 @@ class _UserPostView extends State<UserPostView> {
                           backgroundColor: Colors.grey,
                           radius: 25,
                           backgroundImage: userPhotoUrl.isNotEmpty ?
-                          NetworkImage(userPhotoUrl) : AssetImage('assets/small_logo.png'),
+                          NetworkImage(userPhotoUrl) : AssetImage('assets/small_logo.png') as ImageProvider,
                         ),
                         const SizedBox(width: 10),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              name,
+                              ownername,
                               style: TextStyle(
                                 fontFamily: 'DM Serif Display',
                                 fontSize: 20,
@@ -251,12 +244,33 @@ class _UserPostView extends State<UserPostView> {
                       itemCount: comments.length,
                       itemBuilder: (context, index) {
                         final comment = comments[index];
-                        return Comment.partial(
-                            name: comment.name ?? '',
-                            text: comment.text ?? '',
-                            date: comment.date ?? '',
+                        return CommentWidget(
+                            name: comment.name ?? 'Anonymous',
+                            text: comment.text ?? 'No comment.',
+                            date: comment.date ?? 'Unknown date',
                         );
                       },
+                    ),
+                    SizedBox(height: 40,),
+                    ElevatedButton(onPressed: (){
+                      Navigator.pop(context);
+                    },
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
+                        shape: WidgetStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
+                        fixedSize: MaterialStateProperty.all<Size>(Size(200.0, 60.0),),
+                      ),
+                      child: Text('Back',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                        ),
+                      ),
                     ),
                   ],
                 ),

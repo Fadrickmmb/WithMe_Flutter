@@ -78,16 +78,7 @@ class UserPost extends StatelessWidget {
                     ),
                   ],
                 ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => UserPostView(postId: postId,userId: userId),
-                      ),
-                    );
-                  },
-                  child: Container(
+                Container(
                     margin: EdgeInsets.only(top: 10),
                     height: 250,
                     color: Colors.grey[300],
@@ -97,52 +88,51 @@ class UserPost extends StatelessWidget {
                           : Icon(Icons.photo_camera, size: 50),
                       ),
                     ),
-                  ),
-                  Container(
-                    height: 50,
-                    child: Row(
-                      children: [
-                        Expanded(
-                        flex: 3,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Image.asset('assets/withme_yummy.png', width: 25),
-                            SizedBox(width: 10),
-                            Text(
-                              yummys.toString(),
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
+                Container(
+                  height: 50,
+                  child: Row(
+                    children: [
                       Expanded(
-                        flex: 3,
-                        child: Row(
-                          children: [
-                            Image.asset('assets/withme_comment.png', width: 25),
-                            SizedBox(width: 10),
-                            Text(
-                              comments.toString(),
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
+                      flex: 3,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Image.asset('assets/withme_yummy.png', width: 25),
+                          SizedBox(width: 10),
+                          Text(
+                            yummys.toString(),
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
                       ),
-                      Expanded(
-                        flex: 4,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(
-                              postDate,
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Row(
+                        children: [
+                          Image.asset('assets/withme_comment.png', width: 25),
+                          SizedBox(width: 10),
+                          Text(
+                            comments.toString(),
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            postDate,
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
                 ),
               ],
             ),
