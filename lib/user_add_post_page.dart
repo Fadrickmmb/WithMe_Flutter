@@ -1,138 +1,218 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
+
+
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:image/image.dart' as ImD;
 
 class UserAddPostPage extends StatefulWidget {
   @override
-  _UserAddPostPageState createState() => _UserAddPostPageState();
+  State<StatefulWidget> createState() => _UserAddPostPage();
 }
 
-class _UserAddPostPageState extends State<UserAddPostPage> {
-  final TextEditingController _descriptionController = TextEditingController();
-  File? _imageFile;
-  final ImagePicker _picker = ImagePicker();
+class _UserAddPostPage extends State<UserAddPostPage> {
+  File? file;
+  bool _isUploading = false;
+  String postId = Uuid().v4();
+  final TextEditingController _captionController = TextEditingController();
 
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Pick image from gallery
+  pickImageFromGallery() async {
+    Navigator.pop(context);
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxHeight: 680,
+      maxWidth: 970,
+    );
+    setState(() {
+      if (pickedFile != null) {
+        file = File(pickedFile.path); // Convert XFile to File
+      }
+    });
+  }
+
+  // Compress image before uploading
+  compressPhoto() async {
+    final tDirectory = await getTemporaryDirectory();
+    final path = tDirectory.path;
+    ImD.Image mImageFile = ImD.decodeImage(file!.readAsBytesSync())!;
+    final compressedImageFile = File('$path/img_$postId.jpg')
+      ..writeAsBytesSync(ImD.encodeJpg(mImageFile, quality: 90));
+    setState(() {
+      file = compressedImageFile;
+    });
+  }
+
+  // Upload image to Firebase Storage
+  Future<String> uploadPhoto(File imageFile) async {
+    Reference storageReference =
+    FirebaseStorage.instance.ref().child('posts').child('post_$postId.jpg');
+    UploadTask uploadTask = storageReference.putFile(imageFile);
+    TaskSnapshot storageTaskSnapshot = await uploadTask;
+    String downloadUrl = await storageTaskSnapshot.ref.getDownloadURL();
+    return downloadUrl;
+  }
+
+  // Save post info to Firestore
+  Future<void> savePostInfoToFirestore(String imageUrl) async {
+    User? currentUser = _auth.currentUser;
+
+    await _firestore.collection('posts').doc(postId).set({
+      'postId': postId,
+      'ownerId': currentUser!.uid,
+      'username': currentUser.displayName,
+      'description': _captionController.text,
+      'imageUrl': imageUrl,
+      'timestamp': DateTime.now(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Post uploaded successfully!'),
+    ));
+  }
+
+  // Handle post submission
+  Future<void> handlePostSubmission() async {
+    if (file != null) {
       setState(() {
-        _imageFile = File(pickedFile.path);
+        _isUploading = true;
       });
+
+      await compressPhoto();
+      String imageUrl = await uploadPhoto(file!);
+      await savePostInfoToFirestore(imageUrl);
+
+      setState(() {
+        file = null;
+        _isUploading = false;
+        _captionController.clear();
+        postId = Uuid().v4(); // Generate a new post ID for the next post
+      });
+
+      Navigator.pop(context); // Navigate back to the home page after posting
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Please select an image.'),
+      ));
     }
   }
 
-  Future<void> _uploadPost() async {
-    if (_imageFile != null) {
-      try {
+  takeImage(mContext) {
+    return showDialog(
+      context: mContext,
+      builder: (context) {
+        return SimpleDialog(
+          backgroundColor: Colors.grey[800],
+          title: Text(
+            "New Post",
+            style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+          ),
+          children: <Widget>[
+            SimpleDialogOption(
+              child: Text("Select image from gallery", style: TextStyle(color: Colors.white)),
+              onPressed: pickImageFromGallery,
+            ),
+            SimpleDialogOption(
+              child: Text("Cancel", style: TextStyle(color: Colors.white)),
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('posts/${DateTime.now().toIso8601String()}');
-        await storageRef.putFile(_imageFile!);
+  // Display the upload screen
+  Widget displayAddScreen() {
+    return Container(
+      color: Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(Icons.add_photo_alternate, color: Colors.grey, size: 200.0),
+          Padding(
+            padding: EdgeInsets.only(top: 20.0),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9.0),
+                ),
+              ),
+              child: Text("Upload Image", style: TextStyle(color: Colors.white, fontSize: 20.0)),
+              onPressed: () => takeImage(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-
-        String imageUrl = await storageRef.getDownloadURL();
-
-
-        String description = _descriptionController.text;
-
-        // TODO: Add logic to save the image URL and description to Firestore (database)
-
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Post uploaded successfully!'),
-        ));
-
-        Navigator.pop(context);
-
-      } catch (e) {
-        print('Error uploading image: $e');
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to upload post.'),
-        ));
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Please add a photo.'),
-      ));
-    }
+  // Display the form for adding a description and submitting the post
+  Widget displayAddFormScreen() {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Describe Post and Submit'),
+        actions: [
+          TextButton(
+            onPressed: handlePostSubmission,
+            child: Text(
+              'Post',
+              style: TextStyle(color: Colors.black, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+      body: ListView(
+        children: [
+          if (_isUploading) LinearProgressIndicator(),
+          Container(
+            height: 230.0,
+            width: MediaQuery.of(context).size.width * 0.8,
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Container(
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: FileImage(file!),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(padding: EdgeInsets.only(top: 12.0)),
+          ListTile(
+            title: TextField(
+              controller: _captionController,
+              decoration: InputDecoration(
+                hintText: 'Enter a description...',
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          Divider(),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('With Me'),
-        actions: [
-          Icon(Icons.favorite),
-          SizedBox(width: 10),
-          Icon(Icons.chat_bubble_outline),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundImage: NetworkImage(
-                      'https://example.com/profile.jpg'),
-                ),
-                SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('User', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    GestureDetector(
-                      onTap: () {
-                        // TODO: Add location picker logic here
-                      },
-                      child: Row(
-                        children: [
-                          Icon(Icons.location_on, size: 16),
-                          SizedBox(width: 5),
-                          Text('Add Location', style: TextStyle(fontSize: 14, color: Colors.grey)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            SizedBox(height: 20),
-            GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: _imageFile == null
-                    ? Center(child: Text('+ ADD PHOTO', style: TextStyle(fontSize: 18)))
-                    : Image.file(_imageFile!, fit: BoxFit.cover),
-              ),
-            ),
-            SizedBox(height: 20),
-            TextField(
-              controller: _descriptionController,
-              decoration: InputDecoration(
-                hintText: 'Add Description',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _uploadPost,
-              child: Text('Post'),
-            ),
-          ],
-        ),
-      ),
+      body: file == null ? displayAddScreen() : displayAddFormScreen(),
     );
   }
 }

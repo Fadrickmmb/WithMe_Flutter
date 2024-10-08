@@ -11,10 +11,9 @@ class Post {
   int? yummys;
   int? commentsNumber;
   String? postId;
-  Map<String, Comment>? comments;
 
   Post();
-
+  //
   Post.full({
     required this.content,
     required this.userId,
@@ -26,7 +25,6 @@ class Post {
     required this.yummys,
     required this.commentsNumber,
     required this.postId,
-    required this.comments,
   });
 
   Post.partial({
@@ -41,8 +39,4 @@ class Post {
     required this.postId,
   });
 
-
-
-  Map<String, Comment>? getComments() => comments;
-  setComments(Map<String, Comment> comments) => this.comments = comments;
 }
