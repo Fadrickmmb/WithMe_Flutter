@@ -95,6 +95,51 @@ class _UserPostView extends State<UserPostView> {
     }
   }
 
+  Future<void> _addCommentToDatabase(String commentText) async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final user = auth.currentUser;
+    final DatabaseReference postReference = FirebaseDatabase.instance
+        .ref().child('users/${widget.userId}/posts/${widget.postId}/comments');
+
+    if(user != null) {
+      final String commentId = postReference.push().key ?? "";
+      final DateTime today = DateTime.now();
+      final String formattedDate = "${today.year.toString()}-${today.month.toString().padLeft(2,'0')}-${today.day.toString().padLeft(2,'0')}"
+        "${today.hour.toString().padLeft(2,'0')}:${today.minute.toString().padLeft(2,'0')}";
+      final commentInfo = Comment.full(
+          name: user.displayName ?? 'Anonymous',
+          text: commentText,
+          date: formattedDate,
+          userId: user.uid,
+          postId: widget.postId,
+          commentId: commentId,
+      );
+
+      try{
+        await postReference.child(commentId).set({
+          'commentId': commentInfo.commentId,
+          'name': commentInfo.name,
+          'text': commentInfo.text,
+          'date': commentInfo.date,
+          'userId': commentInfo.userId,
+          'postId': commentInfo.postId,
+        });
+        setState(() {
+          comments.add(Comment.partial(
+              name: commentInfo.name,
+              text: commentInfo.text,
+              date: commentInfo.date
+          ));
+        });
+      } catch (e) {
+        print("Error adding comment: $e");
+      }
+    } else {
+      print("User is not logged in.");
+    }
+
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -286,9 +331,40 @@ class _UserPostView extends State<UserPostView> {
                         ),
                         SizedBox(width: 20,),
                         ElevatedButton(onPressed: (){
-                          Navigator.pop(context);
-                        },
-                          style: ButtonStyle(
+                          showDialog(
+                              context: context,
+                              builder: (BuildContext context){
+                                TextEditingController commentController = TextEditingController();
+                                return AlertDialog(
+                                  title: Text("Add a comment:"),
+                                  content: TextField(
+                                    controller: commentController,
+                                    decoration: InputDecoration(hintText: 'Write your comment here'),
+                                  ),
+                                  actions: <Widget> [
+                                    TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text("Cancel"),
+                                    ),
+                                    TextButton(
+                                        onPressed: () {
+                                          String commentText = commentController.text.trim();
+                                          if(commentText.isNotEmpty) {
+                                            _addCommentToDatabase(commentText);
+                                            Navigator.of(context).pop();
+                                          } else {
+                                            print("Comment is empty.");
+                                          }
+                                        },
+                                        child: Text("Comment"),
+                                    ),
+                                  ],
+                                );
+                              },
+                          );
+                        }, style: ButtonStyle(
                             backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
                             shape: WidgetStateProperty.all(
                               RoundedRectangleBorder(
