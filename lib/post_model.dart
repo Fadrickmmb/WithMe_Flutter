@@ -38,5 +38,4 @@ class Post {
     required this.userPhotoUrl,
     required this.postId,
   });
-
 }

@@ -32,7 +32,7 @@ class _UserPostView extends State<UserPostView> {
   late String postId = '';
   late String date = '';
   late String text = '';
-  late List<Comment> comments = []; //String is the comment id and Comment is the object comment
+  late List<Comment> comments = [];
   int _selectedIndex = 0;
 
   void initState(){
@@ -55,7 +55,7 @@ class _UserPostView extends State<UserPostView> {
             ownername = postData?['name'] ?? '';
             content = postData?['content'] ?? '';
             postImageUrl = postData?['postImageUrl'] ?? '';
-            userPhotoUrl = postData?['userImageUrl'] ?? '';
+            userPhotoUrl = postData?['userPhotoUrl'] ?? '';
             location = postData?['location'] ?? '';
             postDate = postData?['postDate'] ?? '';
             yummys = int.tryParse(postData?['yummys']?.toString() ?? '0') ?? 0;
@@ -238,7 +238,16 @@ class _UserPostView extends State<UserPostView> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10,),
+                    Container(
+                      padding: EdgeInsets.all(5),
+                      alignment: Alignment.topLeft,
+                        child: Text(content, textAlign: TextAlign.start, style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                     ListView.builder(
                       shrinkWrap: true,
                       itemCount: comments.length,
@@ -251,26 +260,52 @@ class _UserPostView extends State<UserPostView> {
                         );
                       },
                     ),
-                    SizedBox(height: 40,),
-                    ElevatedButton(onPressed: (){
-                      Navigator.pop(context);
-                    },
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                    SizedBox(height: 20,),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(onPressed: (){
+                          Navigator.pop(context);
+                        },
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
+                            fixedSize: MaterialStateProperty.all<Size>(Size(150.0, 50.0),),
+                          ),
+                          child: Text('Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
-                        padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
-                        fixedSize: MaterialStateProperty.all<Size>(Size(200.0, 60.0),),
-                      ),
-                      child: Text('Back',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
+                        SizedBox(width: 20,),
+                        ElevatedButton(onPressed: (){
+                          Navigator.pop(context);
+                        },
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
+                            fixedSize: MaterialStateProperty.all<Size>(Size(150.0, 50.0),),
+                          ),
+                          child: Text('Comment',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -285,7 +320,13 @@ class _UserPostView extends State<UserPostView> {
           BottomNavigationBarItem(icon: Image.asset('assets/withme_home.png', height: 30), label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_search.png', height: 30), label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_newpost.png', height: 30), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person, size: 36), label: ''),
+          BottomNavigationBarItem(icon: CircleAvatar(
+            backgroundColor: Colors.grey,
+            radius: 20,
+            backgroundImage: userPhotoUrl.isNotEmpty ?
+            NetworkImage(userPhotoUrl) : AssetImage('assets/small_logo.png'),
+          ),
+              label: ''),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.grey,
