@@ -210,12 +210,9 @@ class _UserViewProfile extends State<UserViewProfile>{
           padding: EdgeInsets.all(20),
           width: double.infinity,
           alignment: Alignment.center,
-
-          //Header
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              //header
               Container(
                 alignment: Alignment.center,
                 padding: EdgeInsets.fromLTRB(0,30,0,0),
