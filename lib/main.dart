@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:withme_flutter/auth_forgotPassword.dart';
 import 'package:withme_flutter/auth_login.dart';
 import 'package:withme_flutter/auth_register.dart';
 import 'package:withme_flutter/user_profile_page.dart';
@@ -22,6 +23,12 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
+
+      initialRoute: '/',
+      routes: {
+        // '/': (context) => HomePage(),
+        '/forgot_password': (context) => AuthForgotPassword(),
+      },
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }

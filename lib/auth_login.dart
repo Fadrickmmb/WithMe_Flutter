@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'admin_home_page.dart';
+import 'auth_forgotPassword.dart';
 import 'user_home_page.dart';
 
 class AuthLogin extends StatefulWidget {
@@ -125,7 +126,7 @@ class _AuthLoginState extends State<AuthLogin> {
             SizedBox(height: 10),
             GestureDetector(
               onTap: () {
-                // add forgot password function here
+                Navigator.pushNamed(context, '/forgot_password' );
               },
               child: Text(
                 'Forgot Password?',
@@ -144,7 +145,7 @@ class _AuthLoginState extends State<AuthLogin> {
               onTap: () {
               },
               child: Text(
-                'Don\'t Have an Account? \nRegister Here',
+                'Don\'t Have an Account? \n Register Here',
                 textAlign: TextAlign.center,
                 style: TextStyle(decoration: TextDecoration.underline),
               ),
