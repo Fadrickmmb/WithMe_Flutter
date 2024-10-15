@@ -1,7 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:withme_flutter/auth_login.dart';
+import 'package:withme_flutter/user_add_post_page.dart';
+import 'package:withme_flutter/user_home_page.dart';
+import 'package:withme_flutter/user_profile_page.dart';
+import 'package:withme_flutter/user_search_page.dart';
 
 class UserEditProfile extends StatefulWidget {
   @override
@@ -11,8 +18,12 @@ class UserEditProfile extends StatefulWidget {
 class _EditProfilePageState extends State<UserEditProfile> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   String userAvatar = '';
   String userId = '';
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -40,21 +51,61 @@ class _EditProfilePageState extends State<UserEditProfile> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<String?> _uploadImage(File imageFile) async {
+    try {
+      final storageRef = FirebaseStorage.instance.ref().child('user_profile_pictures/$userId.jpg');
+      await storageRef.putFile(imageFile);
+      return await storageRef.getDownloadURL();
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
+    }
+  }
+
   Future<void> _updateUserProfile() async {
     final FirebaseAuth auth = FirebaseAuth.instance;
     final User? user = auth.currentUser;
 
     if (user != null) {
+      String? imageUrl;
+      if (_imageFile != null) {
+        imageUrl = await _uploadImage(_imageFile!);
+      }
+
       final DatabaseReference userRef = FirebaseDatabase.instance.ref().child('users/${user.uid}');
       await userRef.update({
         'name': _nameController.text,
         'userBio': _bioController.text,
-        'userPhotoUrl': userAvatar, // Update avatar if needed
+        'userPhotoUrl': imageUrl ?? userAvatar,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Profile updated successfully!")));
-      Navigator.pop(context);
     }
+
+    if (_passwordController.text.isNotEmpty) {
+      try {
+        await user!.updatePassword(_passwordController.text.trim());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Password updated successfully!')),
+        );
+      } catch (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating password: $error')),
+        );
+      }
+    }
+
+    Navigator.pop(context);
   }
 
   Future<void> _logoutUser() async {
@@ -62,8 +113,45 @@ class _EditProfilePageState extends State<UserEditProfile> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => AuthLogin()),
-          (route) => false, // This removes all the previous routes, ensuring the user can't go back
+          (route) => false,
     );
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => UserHomePage()),
+        );
+        break;
+      case 1:
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => UserSearchPage()),
+        );
+        break;
+      case 2:
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => UserAddPostPage()),
+        );
+        break;
+      case 3:
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => UserProfilePage()),
+        );
+        break;
+    }
   }
 
   @override
@@ -72,12 +160,6 @@ class _EditProfilePageState extends State<UserEditProfile> {
       appBar: AppBar(
         title: Text('Edit Profile'),
         backgroundColor: Colors.grey,
-        // actions: [
-        //   IconButton(
-        //     icon: Icon(Icons.logout),
-        //     onPressed: _logoutUser, // Trigger the logout function
-        //   ),
-        // ],
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
@@ -86,9 +168,15 @@ class _EditProfilePageState extends State<UserEditProfile> {
             CircleAvatar(
               backgroundColor: Colors.grey,
               radius: 50,
-              backgroundImage: userAvatar.isNotEmpty
+              backgroundImage: _imageFile != null
+                  ? FileImage(_imageFile!)
+                  : userAvatar.isNotEmpty
                   ? NetworkImage(userAvatar)
                   : AssetImage('assets/small_logo.png') as ImageProvider,
+            ),
+            TextButton(
+              onPressed: _pickImage,
+              child: Text('Change Profile Picture'),
             ),
             SizedBox(height: 20),
             TextField(
@@ -105,7 +193,16 @@ class _EditProfilePageState extends State<UserEditProfile> {
                 labelText: "Bio",
                 border: OutlineInputBorder(),
               ),
-              maxLines: 3,
+              maxLines: 1,
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(
+                labelText: "New Password",
+                border: OutlineInputBorder(),
+              ),
+              obscureText: true,
             ),
             SizedBox(height: 20),
             ElevatedButton(
@@ -130,9 +227,36 @@ class _EditProfilePageState extends State<UserEditProfile> {
           ],
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        items: [
+          BottomNavigationBarItem(
+            icon: Image.asset('assets/withme_home.png', height: 30,),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Image.asset('assets/withme_search.png', height: 30,),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Image.asset('assets/withme_newpost.png', height: 30,),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: CircleAvatar(
+              backgroundColor: Colors.grey,
+              radius: 20,
+              backgroundImage: userAvatar.isNotEmpty
+                  ? NetworkImage(userAvatar)
+                  : AssetImage('assets/small_logo.png'),
+            ),
+            label: '',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
+      ),
     );
   }
 }
-
-
-
