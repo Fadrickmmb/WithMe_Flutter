@@ -141,8 +141,8 @@ class _UserProfilePage extends State<UserProfilePage>{
       );
     } else if (index == 3) {
       Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => UserProfilePage()),
+        context,
+        MaterialPageRoute(builder: (context) => UserProfilePage()),
       );
     }
   }
@@ -204,9 +204,9 @@ class _UserProfilePage extends State<UserProfilePage>{
               Container(
                 padding: EdgeInsets.all(20),
                 child: Text(name.toUpperCase(),style: TextStyle(
-                      fontSize: 26,
-                      fontFamily: 'DM Serif Display',
-                  ),
+                  fontSize: 26,
+                  fontFamily: 'DM Serif Display',
+                ),
                 ),
               ),
               Container(
@@ -218,15 +218,15 @@ class _UserProfilePage extends State<UserProfilePage>{
                       child: Column(
                         children: [
                           Text(followers,style:
-                            TextStyle(
-                              fontSize: 20,
-                              fontFamily: 'DM Serif Display',
-                            ),
+                          TextStyle(
+                            fontSize: 20,
+                            fontFamily: 'DM Serif Display',
+                          ),
                           ),
                           Text('Followers',style:
-                            TextStyle(
-                              fontSize: 16,
-                            ),
+                          TextStyle(
+                            fontSize: 16,
+                          ),
                           ),
                         ],
                       ),
@@ -342,12 +342,12 @@ class _UserProfilePage extends State<UserProfilePage>{
           BottomNavigationBarItem(icon: Image.asset('assets/withme_search.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_newpost.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: CircleAvatar(
-              backgroundColor: Colors.grey,
-              radius: 20,
-              backgroundImage: userAvatar.isNotEmpty ?
-              NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
-            ),
-            label: ''),
+            backgroundColor: Colors.grey,
+            radius: 20,
+            backgroundImage: userAvatar.isNotEmpty ?
+            NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
+          ),
+              label: ''),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.grey,
@@ -356,4 +356,3 @@ class _UserProfilePage extends State<UserProfilePage>{
     );
   }
 }
-

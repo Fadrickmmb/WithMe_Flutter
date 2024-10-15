@@ -1,11 +1,14 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:withme_flutter/auth_login.dart';
+import 'package:withme_flutter/user_add_post_page.dart';
+import 'package:withme_flutter/user_home_page.dart';
+import 'package:withme_flutter/user_profile_page.dart';
+import 'package:withme_flutter/user_search_page.dart';
 
 class UserEditProfile extends StatefulWidget {
   @override
@@ -20,13 +23,13 @@ class _EditProfilePageState extends State<UserEditProfile> {
   String userId = '';
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
+  int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
   }
-
 
   Future<void> _fetchUserData() async {
     final FirebaseAuth auth = FirebaseAuth.instance;
@@ -48,7 +51,6 @@ class _EditProfilePageState extends State<UserEditProfile> {
     }
   }
 
-
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
 
@@ -58,7 +60,6 @@ class _EditProfilePageState extends State<UserEditProfile> {
       });
     }
   }
-
 
   Future<String?> _uploadImage(File imageFile) async {
     try {
@@ -70,7 +71,6 @@ class _EditProfilePageState extends State<UserEditProfile> {
       return null;
     }
   }
-
 
   Future<void> _updateUserProfile() async {
     final FirebaseAuth auth = FirebaseAuth.instance;
@@ -92,7 +92,6 @@ class _EditProfilePageState extends State<UserEditProfile> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Profile updated successfully!")));
     }
 
-
     if (_passwordController.text.isNotEmpty) {
       try {
         await user!.updatePassword(_passwordController.text.trim());
@@ -106,7 +105,6 @@ class _EditProfilePageState extends State<UserEditProfile> {
       }
     }
 
-
     Navigator.pop(context);
   }
 
@@ -117,6 +115,43 @@ class _EditProfilePageState extends State<UserEditProfile> {
       MaterialPageRoute(builder: (context) => AuthLogin()),
           (route) => false,
     );
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => UserHomePage()),
+        );
+        break;
+      case 1:
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => UserSearchPage()),
+        );
+        break;
+      case 2:
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => UserAddPostPage()),
+        );
+        break;
+      case 3:
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => UserProfilePage()),
+        );
+        break;
+    }
   }
 
   @override
@@ -130,7 +165,6 @@ class _EditProfilePageState extends State<UserEditProfile> {
         padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
-
             CircleAvatar(
               backgroundColor: Colors.grey,
               radius: 50,
@@ -162,8 +196,6 @@ class _EditProfilePageState extends State<UserEditProfile> {
               maxLines: 1,
             ),
             SizedBox(height: 20),
-
-
             TextField(
               controller: _passwordController,
               decoration: InputDecoration(
@@ -173,7 +205,6 @@ class _EditProfilePageState extends State<UserEditProfile> {
               obscureText: true,
             ),
             SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: _updateUserProfile,
               child: Text('Save Changes'),
@@ -195,6 +226,36 @@ class _EditProfilePageState extends State<UserEditProfile> {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        items: [
+          BottomNavigationBarItem(
+            icon: Image.asset('assets/withme_home.png', height: 30,),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Image.asset('assets/withme_search.png', height: 30,),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Image.asset('assets/withme_newpost.png', height: 30,),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: CircleAvatar(
+              backgroundColor: Colors.grey,
+              radius: 20,
+              backgroundImage: userAvatar.isNotEmpty
+                  ? NetworkImage(userAvatar)
+                  : AssetImage('assets/small_logo.png'),
+            ),
+            label: '',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
       ),
     );
   }
