@@ -49,7 +49,7 @@ class _EditProfilePageState extends State<UserEditProfile> {
       await userRef.update({
         'name': _nameController.text,
         'userBio': _bioController.text,
-        'userPhotoUrl': userAvatar, // Update avatar if needed
+        'userPhotoUrl': userAvatar,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Profile updated successfully!")));
@@ -62,7 +62,7 @@ class _EditProfilePageState extends State<UserEditProfile> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => AuthLogin()),
-          (route) => false, // This removes all the previous routes, ensuring the user can't go back
+          (route) => false,
     );
   }
 
@@ -75,7 +75,7 @@ class _EditProfilePageState extends State<UserEditProfile> {
         // actions: [
         //   IconButton(
         //     icon: Icon(Icons.logout),
-        //     onPressed: _logoutUser, // Trigger the logout function
+        //     onPressed: _logoutUser,
         //   ),
         // ],
       ),

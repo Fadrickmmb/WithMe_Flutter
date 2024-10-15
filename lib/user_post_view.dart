@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:withme_flutter/comment_design.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
+import 'package:withme_flutter/user_edit_post.dart';
 import 'package:withme_flutter/user_edit_profile.dart';
 import 'package:withme_flutter/user_home_page.dart';
 import 'package:withme_flutter/user_profile_page.dart';
@@ -140,6 +141,103 @@ class _UserPostView extends State<UserPostView> {
 
   }
 
+  void _showPostDialog(BuildContext context) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context){
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              width: 250,
+              decoration: BoxDecoration(
+                color: Colors.grey[850],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: IconButton(
+                      onPressed: (){
+                        Navigator.of(context).pop();
+                      },
+                      icon: Icon(Icons.close, color: Colors.white,),
+                    ),
+                  ),
+                  SizedBox(height: 20,),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                _deletePost(context);
+                              },
+                              icon: Icon(Icons.delete_outline, size: 60, color: Colors.white),
+                            ),
+                            SizedBox(height: 10,),
+                            Text("DELETE",style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                Navigator.push(context,
+                                  MaterialPageRoute(builder: (context) => UserEditPost(
+                                      userId: widget.userId,
+                                      postId: widget.postId),
+                                  ),
+                                );
+                              },
+                              icon: Icon(Icons.edit, size: 60, color: Colors.white),
+                            ),
+                            SizedBox(height: 10,),
+                            Text("EDIT",style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+    );
+  }
+
+  Future <void> _deletePost(BuildContext context)  async{
+    final DatabaseReference postReference = FirebaseDatabase.instance
+        .ref().child('users/${widget.userId}userId/posts/${widget.postId}');
+    try{
+      await postReference.remove();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Post deleted successfuly."),),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Error deleting post: $e"),),
+      );
+    }
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -158,8 +256,7 @@ class _UserPostView extends State<UserPostView> {
     } else if (index == 2) {
       Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => UserPostView(userId: widget.userId, postId: postId,
-          ),
+            MaterialPageRoute(builder: (context) => UserAddPostPage(),
         ),
       );
     } else if (index == 3) {
@@ -235,7 +332,20 @@ class _UserPostView extends State<UserPostView> {
                           ],
                         ),
                         Spacer(),
-                        Icon(Icons.more_vert),
+                        GestureDetector(
+                          onTap: (){
+                            _showPostDialog(context);
+                          },
+                          child: Row(
+                            children: [
+                              Icon(Icons.circle, size: 7),
+                              SizedBox(width: 5,),
+                              Icon(Icons.circle, size: 7),
+                              SizedBox(width: 5,),
+                              Icon(Icons.circle, size: 7),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 10),

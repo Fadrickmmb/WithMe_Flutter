@@ -137,7 +137,7 @@ class _UserProfilePage extends State<UserProfilePage>{
     } else if (index == 2) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => UserEditProfile()),
+        MaterialPageRoute(builder: (context) => UserAddPostPage()),
       );
     } else if (index == 3) {
       Navigator.push(
@@ -157,12 +157,9 @@ class _UserProfilePage extends State<UserProfilePage>{
           padding: EdgeInsets.all(20),
           width: double.infinity,
           alignment: Alignment.center,
-
-          //Header
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              //header
               Container(
                 alignment: Alignment.center,
                 padding: EdgeInsets.fromLTRB(0,40,0,0),
