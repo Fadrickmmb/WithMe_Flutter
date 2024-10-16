@@ -30,7 +30,7 @@ class _UserEditPost extends State<UserEditPost>{
   final DatabaseReference _userReference = FirebaseDatabase.instance
       .ref().child('users');
   final Reference _storageReference = FirebaseStorage.instance
-      .ref().child("post_images");
+      .ref().child("posts");
   TextEditingController _editLocationController = TextEditingController();
   TextEditingController _editContentController = TextEditingController();
   File? _image;
@@ -113,7 +113,7 @@ class _UserEditPost extends State<UserEditPost>{
       };
 
       if(_image != null){
-        Reference fileReference = _storageReference.child("${widget.postId}.jpg");
+        Reference fileReference = _storageReference.child('${widget.postId}.jpg');
         UploadTask uploadTask = fileReference.putFile(_image!);
         TaskSnapshot snapshot = await uploadTask;
         String downloadUrl = await snapshot.ref.getDownloadURL();

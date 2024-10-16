@@ -3,6 +3,8 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
 import 'package:withme_flutter/user_edit_profile.dart';
+import 'package:withme_flutter/user_followers.dart';
+import 'package:withme_flutter/user_following.dart';
 import 'package:withme_flutter/user_home_page.dart';
 import 'package:withme_flutter/user_post_view.dart';
 import 'package:withme_flutter/user_search_page.dart';
@@ -16,13 +18,13 @@ class UserProfilePage extends StatefulWidget{
 
 class _UserProfilePage extends State<UserProfilePage>{
   late String name = '';
-  late String followers = '';
-  late String posts = '';
-  late String following = '';
   late String userBio = '';
   late String userAvatar = '';
   late String postId = '';
   late String userId = '';
+  late int numberFollowers = 0;
+  late int numberFollowing = 0;
+  late int numberPosts = 0;
   late int commentsNumber = 0;
   late int yummys = 0;
   late String location = '';
@@ -34,6 +36,8 @@ class _UserProfilePage extends State<UserProfilePage>{
     super.initState();
     _fetchInfo();
     _fetchPost();
+    _fetchNumberFollowers();
+    _fetchNumberFollowing();
   }
 
   Future<void> _fetchInfo() async {
@@ -43,7 +47,6 @@ class _UserProfilePage extends State<UserProfilePage>{
     if (user != null) {
       final DatabaseReference userRef = FirebaseDatabase.instance.ref().child(
           'users/${user.uid}');
-      final DatabaseReference postRef = userRef.child('posts');
 
       try{
         final DataSnapshot snapshot = await userRef.get();
@@ -53,8 +56,6 @@ class _UserProfilePage extends State<UserProfilePage>{
           setState(() {
             userId = userData?['id'] ?? 'User not found';
             name = userData?['name'] ?? 'User not found';
-            followers = userData?['numberFollowers'] ?? '0';
-            following = userData?['numberFollowing'] ?? '0';
             userBio = userData?['userBio'] ?? 'User';
             userAvatar = userData?['userPhotoUrl'] ?? '';
           });
@@ -85,7 +86,7 @@ class _UserProfilePage extends State<UserProfilePage>{
           final postsData = postsSnapshot.value as Map?;
           if(postsData != null) {
             setState(() {
-              postList = postsData?.values.map((postData) {
+              postList = postsData.values.map((postData) {
                 print('Post ID from Firebase: ${postData['postId']}');
                 return Post.partial(
                   name: postData['name'],
@@ -98,7 +99,8 @@ class _UserProfilePage extends State<UserProfilePage>{
                   postId: postData['postId'],
                   userId: postData['userId'],
                 );
-              }).toList().cast<Post>() ?? [];
+              }).toList().cast<Post>();
+              numberPosts = postsData.length;
             });
             print('Postlist length: ${postList.length}');
 
@@ -116,6 +118,52 @@ class _UserProfilePage extends State<UserProfilePage>{
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("user not logged in."))
       );
+    }
+  }
+
+  Future<void> _fetchNumberFollowers() async{
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    if (user != null) {
+      final DatabaseReference followersRef = FirebaseDatabase.instance.ref()
+          .child('users/${user.uid}/followers');
+
+      try {
+        final DataSnapshot snapshot = await followersRef.get();
+        int followersCount = 0;
+        if (snapshot.exists) {
+          followersCount = snapshot.children.length;
+        }
+        setState(() {
+          numberFollowers = followersCount;
+        });
+      } catch (e) {
+        print("Error fetching number of followers: $e");
+      }
+    }
+  }
+
+  Future<void> _fetchNumberFollowing() async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    if (user != null) {
+      final DatabaseReference followingRef = FirebaseDatabase.instance.ref()
+          .child('users/${user.uid}/following');
+
+      try {
+        final DataSnapshot snapshot = await followingRef.get();
+        int followingCount = 0;
+        if (snapshot.exists) {
+          followingCount = snapshot.children.length;
+        }
+        setState(() {
+          numberFollowing = followingCount;
+        });
+      } catch (e) {
+        print("Error fetching number of following: $e");
+      }
     }
   }
 
@@ -207,31 +255,39 @@ class _UserProfilePage extends State<UserProfilePage>{
                 ),
               ),
               Container(
-                padding: EdgeInsets.fromLTRB(0, 10, 0, 30),
+                padding: EdgeInsets.fromLTRB(20, 10, 20, 30),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Text(followers,style:
-                          TextStyle(
-                            fontSize: 20,
-                            fontFamily: 'DM Serif Display',
+                    GestureDetector(
+                      onTap: (){
+                        Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => UserFollowers(userId: userId,),
                           ),
-                          ),
-                          Text('Followers',style:
-                          TextStyle(
-                            fontSize: 16,
-                          ),
-                          ),
-                        ],
+                        );
+                      },
+                      child: Expanded(
+                        child: Column(
+                          children: [
+                            Text('$numberFollowers',style:
+                            TextStyle(
+                              fontSize: 20,
+                              fontFamily: 'DM Serif Display',
+                            ),
+                            ),
+                            Text('Followers',style:
+                              TextStyle(
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     Expanded(
                       child: Column(
                         children: [
-                          Text(posts,style: TextStyle(
+                          Text('$numberPosts',style: TextStyle(
                             fontSize: 20,
                             fontFamily: 'DM Serif Display',
                           ),
@@ -243,21 +299,27 @@ class _UserProfilePage extends State<UserProfilePage>{
                         ],
                       ),
                     ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Text(following,style: TextStyle(
-                            fontSize: 20,
-                            fontFamily: 'DM Serif Display',
-                          ),
-                          ),
-                          Text('Following',style: TextStyle(
-                            fontSize: 16,
-                          ),
-                          ),
-                        ],
+                    GestureDetector(
+                      onTap: (){
+                        Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => UserFollowing(userId: userId,),),);
+                      },
+                      child: Expanded(
+                        child: Column(
+                          children: [
+                            Text('$numberFollowing', style: TextStyle(
+                              fontSize: 20,
+                              fontFamily: 'DM Serif Display',
+                            ),
+                            ),
+                            Text('Following',style: TextStyle(
+                              fontSize: 16,
+                            ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    )
                   ],
                 ),
               ),
@@ -339,12 +401,12 @@ class _UserProfilePage extends State<UserProfilePage>{
           BottomNavigationBarItem(icon: Image.asset('assets/withme_search.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_newpost.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: CircleAvatar(
-            backgroundColor: Colors.grey,
-            radius: 20,
-            backgroundImage: userAvatar.isNotEmpty ?
-            NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
-          ),
-              label: ''),
+              backgroundColor: Colors.grey,
+              radius: 20,
+              backgroundImage: userAvatar.isNotEmpty ?
+              NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
+            ),
+            label: ''),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.grey,

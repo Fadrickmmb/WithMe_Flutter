@@ -9,18 +9,23 @@ import 'post_model.dart';
 import 'user_post.dart';
 
 class UserViewProfile extends StatefulWidget{
+  final String followerId;
+  UserViewProfile({required this.followerId});
+
   @override
   State<StatefulWidget> createState() => _UserViewProfile();
 }
 
 class _UserViewProfile extends State<UserViewProfile>{
   late String name = '';
-  late String followers = '';
-  late String posts = '';
-  late String following = '';
-  late String userBio = '';
+  late String followerBio = '';
+  late String followerAvatar = '';
   late String userAvatar = '';
+  late int numberFollowers = 0;
+  late int numberFollowing = 0;
+  late int numberPosts = 0;
   late String postId = '';
+  late String followerId = '';
   late String userId = '';
   late String postDate = '';
   late String location = '';
@@ -35,29 +40,24 @@ class _UserViewProfile extends State<UserViewProfile>{
     super.initState();
     _fetchInfo();
     _fetchPost();
+    _fetchUserAvatar();
+    _fetchNumberFollowers();
+    _fetchNumberFollowing();
     checkFollowStatus();
   }
 
-  Future<void> _fetchInfo() async {
+  Future<void> _fetchUserAvatar() async {
     final FirebaseAuth auth = FirebaseAuth.instance;
     final User? user = auth.currentUser;
 
     if (user != null) {
       final DatabaseReference userRef = FirebaseDatabase.instance.ref().child(
           'users/${user.uid}');
-      final DatabaseReference postRef = userRef.child('posts');
-
       try{
         final DataSnapshot snapshot = await userRef.get();
-
         if (snapshot.exists) {
           final userData = snapshot.value as Map?;
           setState(() {
-            userId = userData?['id'] ?? 'User not found';
-            name = userData?['name'] ?? 'User not found';
-            followers = userData?['numberFollowers'] ?? '0';
-            following = userData?['numberFollowing'] ?? '0';
-            userBio = userData?['userBio'] ?? 'User';
             userAvatar = userData?['userPhotoUrl'] ?? '';
           });
         }
@@ -74,13 +74,47 @@ class _UserViewProfile extends State<UserViewProfile>{
     }
   }
 
+  Future<void> _fetchInfo() async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    if (user != null) {
+      final DatabaseReference userRef = FirebaseDatabase.instance.ref().child(
+          'users/${widget.followerId}');
+      final DatabaseReference postRef = userRef.child('posts');
+
+      try{
+        final DataSnapshot snapshot = await userRef.get();
+
+        if (snapshot.exists) {
+          final userData = snapshot.value as Map?;
+          setState(() {
+            followerId = userData?['id'] ?? 'User not found';
+            name = userData?['name'] ?? 'User not found';
+            followerBio = userData?['userBio'] ?? 'User';
+            followerAvatar = userData?['userPhotoUrl'] ?? '';
+          });
+        }
+      } catch(e) {
+        print("error fetching user data $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to load user data."))
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("User not found."))
+      );
+    }
+  }
+
   Future<void> _fetchPost() async {
     final FirebaseAuth auth = FirebaseAuth.instance;
     final User? user = auth.currentUser;
 
     if (user != null) {
       final DatabaseReference postRef = FirebaseDatabase.instance.ref().child(
-          'users/${user.uid}/posts');
+          'users/${widget.followerId}/posts');
       try{
         final DataSnapshot postsSnapshot = await postRef.get();
         if (postsSnapshot.exists) {
@@ -101,6 +135,7 @@ class _UserViewProfile extends State<UserViewProfile>{
                   content: postData['content'],
                 );
               }).toList().cast<Post>() ?? [];
+              numberPosts = postsData.length;
             });
             print('Postlist length: ${postList.length}');
 
@@ -121,6 +156,52 @@ class _UserViewProfile extends State<UserViewProfile>{
     }
   }
 
+  Future<void> _fetchNumberFollowers() async{
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    if (user != null) {
+      final DatabaseReference followersRef = FirebaseDatabase.instance.ref()
+          .child('users/${widget.followerId}/followers');
+
+      try {
+        final DataSnapshot snapshot = await followersRef.get();
+        int followersCount = 0;
+        if (snapshot.exists) {
+          followersCount = snapshot.children.length;
+        }
+        setState(() {
+          numberFollowers = followersCount;
+        });
+      } catch (e) {
+        print("Error fetching number of followers: $e");
+      }
+    }
+  }
+
+  Future<void> _fetchNumberFollowing() async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    if (user != null) {
+      final DatabaseReference followingRef = FirebaseDatabase.instance.ref()
+          .child('users/${widget.followerId}/following');
+
+      try {
+        final DataSnapshot snapshot = await followingRef.get();
+        int followingCount = 0;
+        if (snapshot.exists) {
+          followingCount = snapshot.children.length;
+        }
+        setState(() {
+          numberFollowing = followingCount;
+        });
+      } catch (e) {
+        print("Error fetching number of following: $e");
+      }
+    }
+  }
+
   Future<void> checkFollowStatus() async {
     final FirebaseAuth auth = FirebaseAuth.instance;
     final User? user = auth.currentUser;
@@ -128,7 +209,7 @@ class _UserViewProfile extends State<UserViewProfile>{
         .child('users')
         .child(user!.uid)
         .child("following")
-        .child(userId)
+        .child(widget.followerId)
         .once();
 
     if (snapshot.snapshot.exists) {
@@ -149,7 +230,7 @@ class _UserViewProfile extends State<UserViewProfile>{
         .child('users')
         .child(user!.uid)
         .child("following")
-        .child(userId);
+        .child(widget.followerId);
     final followersReference = FirebaseDatabase.instance.ref()
         .child('users')
         .child(userId)
@@ -247,7 +328,7 @@ class _UserViewProfile extends State<UserViewProfile>{
                 child: CircleAvatar(
                   backgroundColor: Colors.grey,
                   radius: 70,
-                  backgroundImage: userAvatar.isNotEmpty ?
+                  backgroundImage: followerAvatar.isNotEmpty ?
                   NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
                 ),
               ),
@@ -261,14 +342,6 @@ class _UserViewProfile extends State<UserViewProfile>{
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(20),
-                child: Text(userBio,style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'DM Serif Display',
-                ),
-                ),
-              ),
-              Container(
                 padding: EdgeInsets.fromLTRB(0, 10, 0, 30),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -276,7 +349,7 @@ class _UserViewProfile extends State<UserViewProfile>{
                     Expanded(
                       child: Column(
                         children: [
-                          Text(followers,style: TextStyle(
+                          Text('$numberFollowers',style: TextStyle(
                             fontSize: 20,
                             fontFamily: 'DM Serif Display',
                           ),
@@ -291,7 +364,7 @@ class _UserViewProfile extends State<UserViewProfile>{
                     Expanded(
                       child: Column(
                         children: [
-                          Text(posts,style: TextStyle(
+                          Text('$numberPosts',style: TextStyle(
                             fontSize: 20,
                             fontFamily: 'DM Serif Display',
                           ),
@@ -306,12 +379,12 @@ class _UserViewProfile extends State<UserViewProfile>{
                     Expanded(
                       child: Column(
                         children: [
-                          Text(following,style: TextStyle(
+                          Text('$numberFollowing',style: TextStyle(
                             fontSize: 20,
                             fontFamily: 'DM Serif Display',
                           ),
                           ),
-                          Text('Yummys',style: TextStyle(
+                          Text('Following',style: TextStyle(
                             fontSize: 16,
                           ),
                           ),
@@ -321,6 +394,18 @@ class _UserViewProfile extends State<UserViewProfile>{
                   ],
                 ),
               ),
+              Text('Bio',style: TextStyle(
+                fontSize: 26,
+                fontFamily: 'DM Serif Display',
+              ),
+              ),
+              SizedBox(height: 20,),
+              Text(followerBio,style: TextStyle(
+                fontSize: 20,
+                fontFamily: 'DM Serif Display',
+              ),
+              ),
+              SizedBox(height: 60,),
               ElevatedButton(onPressed: changeFollowStatus,
                 style: ButtonStyle(
                   backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
@@ -350,11 +435,11 @@ class _UserViewProfile extends State<UserViewProfile>{
                     name: post.name ?? 'Unknown',
                     postImageUrl: post.postImageUrl ?? '',
                     userPhotoUrl: post.userPhotoUrl ?? '',
-                    postId: postId ??'',userId: userId ?? '',
-                    comments: commentsNumber,
-                    postDate: postDate,
-                    location: location,
-                    yummys: yummys,);
+                    postId: post.postId ??'',userId: userId ?? '',
+                    comments: post.commentsNumber ?? 0,
+                    postDate: post.postDate ?? '',
+                    location: post.location ?? '',
+                    yummys: post.yummys ?? 0,);
                 },
               ),
             ],
@@ -366,7 +451,15 @@ class _UserViewProfile extends State<UserViewProfile>{
           BottomNavigationBarItem(icon: Image.asset('assets/withme_home.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_search.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_newpost.png',height: 30,),label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person,size: 36,),label: ''),
+          BottomNavigationBarItem(icon: CircleAvatar(
+            backgroundColor: Colors.grey,
+            radius: 20,
+            backgroundImage: userAvatar.isNotEmpty ?
+              NetworkImage(userAvatar) :
+              AssetImage('assets/small_logo.png'),
+          ),
+          label: ''),
+          
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.grey,
