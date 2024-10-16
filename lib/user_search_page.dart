@@ -15,18 +15,48 @@ class _UserSearchPageState extends State<UserSearchPage> {
   String _userName = '';
   String _userUid = '';
 
-  Future<void> _searchUser() async {
-    try {
-      DatabaseEvent event = await _databaseRef.limitToFirst(1).once();
-      if (event.snapshot.value != null) {
-        Map<String, dynamic> userMap = Map<String, dynamic>.from(event.snapshot.value as Map);
-        String firstUid = userMap.keys.first;
-        String firstUserName = userMap[firstUid]['name'];
 
-        setState(() {
-          _userName = firstUserName;
-          _userUid = firstUid;
+  Future<void> _searchUser() async {
+    String searchText = _searchController.text.trim().toLowerCase();
+
+    if (searchText.length < 5) {
+      setState(() {
+        _userName = 'Please enter at least 5 characters';
+        _userUid = '';
+      });
+      return;
+    }
+
+    try {
+
+      DatabaseEvent event = await _databaseRef.once();
+
+      if (event.snapshot.value != null) {
+        Map<String, dynamic> usersMap = Map<String, dynamic>.from(event.snapshot.value as Map);
+
+
+        String? foundUid;
+        String? foundName;
+        usersMap.forEach((uid, userData) {
+          String userName = (userData['name'] as String).toLowerCase();
+          if (userName.startsWith(searchText)) {
+            foundUid = uid;
+            foundName = userData['name'];
+            return;
+          }
         });
+
+        if (foundUid != null && foundName != null) {
+          setState(() {
+            _userName = foundName!;
+            _userUid = foundUid!;
+          });
+        } else {
+          setState(() {
+            _userName = 'No matching user found';
+            _userUid = '';
+          });
+        }
       } else {
         setState(() {
           _userName = 'No users found';
