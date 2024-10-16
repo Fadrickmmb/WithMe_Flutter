@@ -13,7 +13,7 @@ class Post {
   String? postId;
 
   Post();
-
+  
   Post.full({
     required this.content,
     required this.userId,
@@ -38,4 +38,8 @@ class Post {
     required this.userPhotoUrl,
     required this.postId,
   });
+
+
+
 }
+
