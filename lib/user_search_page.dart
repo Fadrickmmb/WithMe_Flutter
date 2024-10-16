@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'user_view_profile.dart'; // Import the profile view screen
 
 class UserSearchPage extends StatefulWidget {
   const UserSearchPage({super.key});
@@ -15,7 +16,6 @@ class _UserSearchPageState extends State<UserSearchPage> {
   String _userName = '';
   String _userUid = '';
 
-
   Future<void> _searchUser() async {
     String searchText = _searchController.text.trim().toLowerCase();
 
@@ -28,12 +28,10 @@ class _UserSearchPageState extends State<UserSearchPage> {
     }
 
     try {
-
       DatabaseEvent event = await _databaseRef.once();
 
       if (event.snapshot.value != null) {
         Map<String, dynamic> usersMap = Map<String, dynamic>.from(event.snapshot.value as Map);
-
 
         String? foundUid;
         String? foundName;
@@ -93,12 +91,26 @@ class _UserSearchPageState extends State<UserSearchPage> {
               child: const Text('Search'),
             ),
             const SizedBox(height: 20),
-            Text(
-              _userName.isNotEmpty
-                  ? 'User: $_userName\nUID: $_userUid'
-                  : 'No user found',
-              textAlign: TextAlign.center,
-            ),
+            _userName.isNotEmpty && _userUid.isNotEmpty
+                ? GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserViewProfile(followerId: _userUid),
+                  ),
+                );
+              },
+              child: Text(
+                'User: $_userName\nUID: $_userUid',
+                style: const TextStyle(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            )
+                : const Text('No user found'),
           ],
         ),
       ),
