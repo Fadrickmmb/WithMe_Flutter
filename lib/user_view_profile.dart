@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
-import 'package:withme_flutter/user_edit_profile.dart';
 import 'package:withme_flutter/user_home_page.dart';
 import 'package:withme_flutter/user_profile_page.dart';
 import 'package:withme_flutter/user_search_page.dart';
@@ -23,6 +22,10 @@ class _UserViewProfile extends State<UserViewProfile>{
   late String userAvatar = '';
   late String postId = '';
   late String userId = '';
+  late String postDate = '';
+  late String location = '';
+  late int commentsNumber = 0;
+  late int yummys = 0;
   String followStatus = 'Follow';
   int _selectedIndex = 0;
   late List postList = [];
@@ -31,6 +34,7 @@ class _UserViewProfile extends State<UserViewProfile>{
   void initState() {
     super.initState();
     _fetchInfo();
+    _fetchPost();
     checkFollowStatus();
   }
 
@@ -63,28 +67,47 @@ class _UserViewProfile extends State<UserViewProfile>{
             SnackBar(content: Text("Failed to load user data."))
         );
       }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("user not logged in."))
+      );
+    }
+  }
 
+  Future<void> _fetchPost() async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    if (user != null) {
+      final DatabaseReference postRef = FirebaseDatabase.instance.ref().child(
+          'users/${user.uid}/posts');
       try{
-        final DataSnapshot postsSnapshot = await postRef.orderByChild('userId').equalTo(user.uid).get();
+        final DataSnapshot postsSnapshot = await postRef.get();
         if (postsSnapshot.exists) {
           final postsData = postsSnapshot.value as Map?;
-          setState(() {
-            postList = postsData?.values.map((postData) {
-              return Post.partial(
-                name: postData['name'],
-                location: postData['location'],
-                postImageUrl: postData['postImageUrl'],
-                postDate: postData['postDate'],
-                yummys: postData['yummys'],
-                commentsNumber: postData['commentsNumber'],
-                userPhotoUrl: postData['userPhotoUrl'],
-                postId: postData['postId'],
-                userId: postData['userId'],
-              );
-            }).toList().cast<Post>() ?? [];
-          });
-        }
+          if(postsData != null) {
+            setState(() {
+              postList = postsData?.values.map((postData) {
+                return Post.full(
+                  name: postData['name'],
+                  location: postData['location'],
+                  postImageUrl: postData['postImageUrl'],
+                  postDate: postData['postDate'],
+                  yummys: postData['yummys'],
+                  commentsNumber: postData['commentsNumber'],
+                  userPhotoUrl: postData['userPhotoUrl'],
+                  postId: postData['postId'],
+                  userId: postData['userId'],
+                  content: postData['content'],
+                );
+              }).toList().cast<Post>() ?? [];
+            });
+            print('Postlist length: ${postList.length}');
 
+          } else {
+            print("No posts found for user.");
+          }
+        }
       } catch(e) {
         print("error fetching user data $e");
         ScaffoldMessenger.of(context).showSnackBar(
@@ -187,12 +210,9 @@ class _UserViewProfile extends State<UserViewProfile>{
           padding: EdgeInsets.all(20),
           width: double.infinity,
           alignment: Alignment.center,
-
-          //Header
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              //header
               Container(
                 alignment: Alignment.center,
                 padding: EdgeInsets.fromLTRB(0,30,0,0),
@@ -225,9 +245,10 @@ class _UserViewProfile extends State<UserViewProfile>{
                 alignment: Alignment.center,
                 padding: EdgeInsets.fromLTRB(0, 50, 0, 0),
                 child: CircleAvatar(
-                  backgroundColor: Color(0xFF1A2F31),
+                  backgroundColor: Colors.grey,
                   radius: 70,
-                  backgroundImage: AssetImage(userAvatar),
+                  backgroundImage: userAvatar.isNotEmpty ?
+                  NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
                 ),
               ),
               SizedBox(height: 20,),
@@ -325,8 +346,15 @@ class _UserViewProfile extends State<UserViewProfile>{
                 itemCount:postList.length,
                 itemBuilder: (context,index){
                   final post = postList[index];
-                  return UserPost(name: post.name ?? 'Unknown', postImageUrl: post.postImageUrl ?? '',
-                    userPhotoUrl: post.userPhotoUrl ?? '', postId: postId ??'',userId: userId ?? '',);
+                  return UserPost.partial(
+                    name: post.name ?? 'Unknown',
+                    postImageUrl: post.postImageUrl ?? '',
+                    userPhotoUrl: post.userPhotoUrl ?? '',
+                    postId: postId ??'',userId: userId ?? '',
+                    comments: commentsNumber,
+                    postDate: postDate,
+                    location: location,
+                    yummys: yummys,);
                 },
               ),
             ],

@@ -23,6 +23,9 @@ class _UserProfilePage extends State<UserProfilePage>{
   late String userAvatar = '';
   late String postId = '';
   late String userId = '';
+  late int commentsNumber = 0;
+  late int yummys = 0;
+  late String location = '';
   int _selectedIndex = 0;
   late List postList = [];
 
@@ -30,6 +33,7 @@ class _UserProfilePage extends State<UserProfilePage>{
   void initState() {
     super.initState();
     _fetchInfo();
+    _fetchPost();
   }
 
   Future<void> _fetchInfo() async {
@@ -61,28 +65,47 @@ class _UserProfilePage extends State<UserProfilePage>{
             SnackBar(content: Text("Failed to load user data."))
         );
       }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("user not logged in."))
+      );
+    }
+  }
 
+  Future<void> _fetchPost() async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    if (user != null) {
+      final DatabaseReference postRef = FirebaseDatabase.instance.ref().child(
+          'users/${user.uid}/posts');
       try{
-        final DataSnapshot postsSnapshot = await postRef.orderByChild('userId').equalTo(user.uid).get();
+        final DataSnapshot postsSnapshot = await postRef.get();
         if (postsSnapshot.exists) {
           final postsData = postsSnapshot.value as Map?;
-          setState(() {
-            postList = postsData?.values.map((postData) {
-              return Post.partial(
-                name: postData['name'],
-                location: postData['location'],
-                postImageUrl: postData['postImageUrl'],
-                postDate: postData['postDate'],
-                yummys: postData['yummys'],
-                commentsNumber: postData['commentsNumber'],
-                userPhotoUrl: postData['userPhotoUrl'],
-                postId: postData['postId'],
-                userId: postData['userId'],
-              );
-            }).toList().cast<Post>() ?? [];
-          });
-        }
+          if(postsData != null) {
+            setState(() {
+              postList = postsData?.values.map((postData) {
+                print('Post ID from Firebase: ${postData['postId']}');
+                return Post.partial(
+                  name: postData['name'],
+                  location: postData['location'],
+                  postImageUrl: postData['postImageUrl'],
+                  postDate: postData['postDate'],
+                  yummys: postData['yummys'],
+                  commentsNumber: postData['commentsNumber'],
+                  userPhotoUrl: postData['userPhotoUrl'],
+                  postId: postData['postId'],
+                  userId: postData['userId'],
+                );
+              }).toList().cast<Post>() ?? [];
+            });
+            print('Postlist length: ${postList.length}');
 
+          } else {
+            print("No posts found for user.");
+          }
+        }
       } catch(e) {
         print("error fetching user data $e");
         ScaffoldMessenger.of(context).showSnackBar(
@@ -114,12 +137,12 @@ class _UserProfilePage extends State<UserProfilePage>{
     } else if (index == 2) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => UserPostView(userId: userId, postId: postId,)),
+        MaterialPageRoute(builder: (context) => UserAddPostPage()),
       );
     } else if (index == 3) {
       Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => UserProfilePage()),
+        context,
+        MaterialPageRoute(builder: (context) => UserProfilePage()),
       );
     }
   }
@@ -134,12 +157,9 @@ class _UserProfilePage extends State<UserProfilePage>{
           padding: EdgeInsets.all(20),
           width: double.infinity,
           alignment: Alignment.center,
-
-          //Header
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              //header
               Container(
                 alignment: Alignment.center,
                 padding: EdgeInsets.fromLTRB(0,40,0,0),
@@ -173,16 +193,17 @@ class _UserProfilePage extends State<UserProfilePage>{
                 child: CircleAvatar(
                   backgroundColor: Colors.grey,
                   radius: 70,
-                  backgroundImage: AssetImage(userAvatar),
+                  backgroundImage: userAvatar.isNotEmpty ?
+                  NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
                 ),
               ),
               SizedBox(height: 20,),
               Container(
                 padding: EdgeInsets.all(20),
                 child: Text(name.toUpperCase(),style: TextStyle(
-                      fontSize: 26,
-                      fontFamily: 'DM Serif Display',
-                  ),
+                  fontSize: 26,
+                  fontFamily: 'DM Serif Display',
+                ),
                 ),
               ),
               Container(
@@ -194,15 +215,15 @@ class _UserProfilePage extends State<UserProfilePage>{
                       child: Column(
                         children: [
                           Text(followers,style:
-                            TextStyle(
-                              fontSize: 20,
-                              fontFamily: 'DM Serif Display',
-                            ),
+                          TextStyle(
+                            fontSize: 20,
+                            fontFamily: 'DM Serif Display',
+                          ),
                           ),
                           Text('Followers',style:
-                            TextStyle(
-                              fontSize: 16,
-                            ),
+                          TextStyle(
+                            fontSize: 16,
+                          ),
                           ),
                         ],
                       ),
@@ -230,7 +251,7 @@ class _UserProfilePage extends State<UserProfilePage>{
                             fontFamily: 'DM Serif Display',
                           ),
                           ),
-                          Text('Yummys',style: TextStyle(
+                          Text('Following',style: TextStyle(
                             fontSize: 16,
                           ),
                           ),
@@ -251,7 +272,7 @@ class _UserProfilePage extends State<UserProfilePage>{
                 fontFamily: 'DM Serif Display',
               ),
               ),
-              SizedBox(height: 20,),
+              SizedBox(height: 60,),
               ElevatedButton(onPressed: (){
                 Navigator.push(context,
                   MaterialPageRoute(builder: (context) => UserEditProfile(),),);
@@ -277,11 +298,34 @@ class _UserProfilePage extends State<UserProfilePage>{
                 primary: false,
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
-                itemCount:postList.length,
-                itemBuilder: (context,index) {
+                itemCount: postList.length,
+                itemBuilder: (context, index) {
                   final post = postList[index];
-                  return UserPost(name: post.name ?? 'Unknown', postImageUrl: post.postImageUrl ?? '',
-                    userPhotoUrl: post.userPhotoUrl ?? '', postId: postId ??'',userId: userId ?? '',
+                  print('Post ID: ${post.postId}');
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserPostView(
+                            userId: post.userId,
+                            postId: post.postId,
+                          ),
+                        ),
+                      );
+                    },
+                    child: UserPost.partial(
+                      postId: post.postId ?? '',
+                      userId: post.userId ?? '',
+                      name: post.name ?? 'Unknown',
+                      postImageUrl: post.postImageUrl ?? 'assets/small.logo.png',
+                      userPhotoUrl: post.userPhotoUrl ?? 'assets/small_logo.png',
+                      yummys: post.yummys ?? 0,
+                      location: post.location ?? 'No location provided',
+                      postDate: post.postDate ?? 'No date provided',
+                      comments: post.commentsNumber ?? 0,
+                    ),
                   );
                 },
               ),
@@ -294,7 +338,13 @@ class _UserProfilePage extends State<UserProfilePage>{
           BottomNavigationBarItem(icon: Image.asset('assets/withme_home.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_search.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_newpost.png',height: 30,),label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person,size: 36,),label: ''),
+          BottomNavigationBarItem(icon: CircleAvatar(
+            backgroundColor: Colors.grey,
+            radius: 20,
+            backgroundImage: userAvatar.isNotEmpty ?
+            NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
+          ),
+              label: ''),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.grey,
@@ -303,4 +353,3 @@ class _UserProfilePage extends State<UserProfilePage>{
     );
   }
 }
-

@@ -21,7 +21,5 @@ class Comment {
     required this.name,
     required this.text,
     required this.date,
-    required this.commentId,
   });
-
 }
