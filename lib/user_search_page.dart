@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'user_view_profile.dart'; // Import the profile view screen
+import 'user_view_profile.dart';
 
 class UserSearchPage extends StatefulWidget {
   const UserSearchPage({super.key});
