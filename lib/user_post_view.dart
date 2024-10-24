@@ -34,11 +34,14 @@ class _UserPostView extends State<UserPostView> {
   late String postId = '';
   late String date = '';
   late String text = '';
+  late String loggedUserId = '';
   late List<Comment> comments = [];
   int _selectedIndex = 0;
+  late FirebaseAuth auth = FirebaseAuth.instance;
 
   void initState(){
     super.initState();
+    _fetchUserAvatar();
     _fetchPostInfo();
     _fetchCommentInfo();
     print('Received userId: ${widget.userId}');
@@ -46,17 +49,17 @@ class _UserPostView extends State<UserPostView> {
   }
 
   Future<void> _fetchUserAvatar() async {
-    final FirebaseAuth auth = FirebaseAuth.instance;
-    final User? user = auth.currentUser;
+    final User? loggedUser = auth.currentUser;
 
-    if (user != null) {
-      final DatabaseReference userRef = FirebaseDatabase.instance.ref().child(
-          'users/${user.uid}');
+    if (loggedUser != null) {
+      final DatabaseReference userRef = FirebaseDatabase.instance.ref().
+          child('users/${loggedUser.uid}');
       try{
         final DataSnapshot snapshot = await userRef.get();
         if (snapshot.exists) {
           final userData = snapshot.value as Map?;
           setState(() {
+            loggedUserId = loggedUser.uid;
             userAvatar = userData?['userPhotoUrl'] ?? '';
           });
         }
@@ -206,6 +209,88 @@ class _UserPostView extends State<UserPostView> {
                               onPressed: () {
                                 _deletePost(context);
                               },
+                              icon: Icon(Icons.delete_outline, size: 60, color: Colors.white),
+                            ),
+                            SizedBox(height: 10,),
+                            Text("DELETE",style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                Navigator.push(context,
+                                  MaterialPageRoute(builder: (context) => UserEditPost(
+                                      userId: widget.userId,
+                                      postId: widget.postId),
+                                  ),
+                                );
+                              },
+                              icon: Icon(Icons.edit, size: 60, color: Colors.white),
+                            ),
+                            SizedBox(height: 10,),
+                            Text("EDIT",style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+    );
+  }
+
+  void _showReportDialog(BuildContext context) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context){
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              width: 250,
+              decoration: BoxDecoration(
+                color: Colors.grey[850],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: IconButton(
+                      onPressed: (){
+                        Navigator.of(context).pop();
+                      },
+                      icon: Icon(Icons.close, color: Colors.white,),
+                    ),
+                  ),
+                  SizedBox(height: 20,),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+
+                              },
                               icon: Icon(Icons.warning_amber, size: 60, color: Colors.white),
                             ),
                             SizedBox(height: 10,),
@@ -230,7 +315,7 @@ class _UserPostView extends State<UserPostView> {
 
   Future <void> _deletePost(BuildContext context)  async{
     final DatabaseReference postReference = FirebaseDatabase.instance
-        .ref().child('users/${widget.userId}userId/posts/${widget.postId}');
+        .ref().child('users/${widget.userId}/posts/${widget.postId}');
     try{
       await postReference.remove();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -241,6 +326,10 @@ class _UserPostView extends State<UserPostView> {
         content: Text("Error deleting post: $e"),),
       );
     }
+  }
+
+  Future<void> _reportPost(BuildContext context) async{
+
   }
 
   void _onItemTapped(int index) {
@@ -339,7 +428,11 @@ class _UserPostView extends State<UserPostView> {
                         Spacer(),
                         GestureDetector(
                           onTap: (){
-                            _showPostDialog(context);
+                            if(widget.userId == loggedUserId) {
+                              _showPostDialog(context);
+                            } else {
+                              _showReportDialog(context);
+                            }
                           },
                           child: Row(
                             children: [
