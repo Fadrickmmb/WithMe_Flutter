@@ -31,11 +31,11 @@ class _UserEditPost extends State<UserEditPost>{
       .ref().child('users');
   final Reference _storageReference = FirebaseStorage.instance
       .ref().child("posts");
-  TextEditingController _editLocationController = TextEditingController();
   TextEditingController _editContentController = TextEditingController();
   File? _image;
   final picker = ImagePicker();
   String? _downloadUrl;
+  late String location = '';
   late String userAvatar = '';
   late String postId = '';
   late String userId = '';
@@ -89,7 +89,7 @@ class _UserEditPost extends State<UserEditPost>{
         final postData = snapshot.value as Map?;
         if(postData != null){
           setState(() {
-            _editLocationController.text = postData['location'] ?? '';
+            location: postData['location'];
             _editContentController.text = postData['content'] ?? '';
             _downloadUrl = postData['postImageUrl'];
           });
@@ -108,7 +108,6 @@ class _UserEditPost extends State<UserEditPost>{
       DatabaseReference postReference = _userReference
           .child(user.uid).child("posts").child(widget.postId);
       Map<String, Object> editedPost = {
-        "location": _editLocationController.text,
         "content": _editContentController.text,
       };
 
@@ -222,15 +221,11 @@ class _UserEditPost extends State<UserEditPost>{
                   ),
                 ),
               ),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: _editLocationController.text,
-                  hintStyle: TextStyle(
+              Text(location,style: TextStyle(
                       fontFamily: 'DM Serif Display',
                       fontSize: 20,
                     ),
                 ),
-              ),
               SizedBox(height: 20,),
               Container(
                 alignment: Alignment.centerLeft,

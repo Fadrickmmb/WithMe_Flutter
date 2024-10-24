@@ -87,7 +87,6 @@ class _UserProfilePage extends State<UserProfilePage>{
           if(postsData != null) {
             setState(() {
               postList = postsData.values.map((postData) {
-                print('Post ID from Firebase: ${postData['postId']}');
                 return Post.partial(
                   name: postData['name'],
                   location: postData['location'],
@@ -276,9 +275,9 @@ class _UserProfilePage extends State<UserProfilePage>{
                             ),
                             ),
                             Text('Followers',style:
-                              TextStyle(
-                                fontSize: 16,
-                              ),
+                            TextStyle(
+                              fontSize: 16,
+                            ),
                             ),
                           ],
                         ),
@@ -401,12 +400,12 @@ class _UserProfilePage extends State<UserProfilePage>{
           BottomNavigationBarItem(icon: Image.asset('assets/withme_search.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_newpost.png',height: 30,),label: ''),
           BottomNavigationBarItem(icon: CircleAvatar(
-              backgroundColor: Colors.grey,
-              radius: 20,
-              backgroundImage: userAvatar.isNotEmpty ?
-              NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
-            ),
-            label: ''),
+            backgroundColor: Colors.grey,
+            radius: 20,
+            backgroundImage: userAvatar.isNotEmpty ?
+            NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
+          ),
+              label: ''),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.grey,

@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
 import 'package:withme_flutter/user_home_page.dart';
+import 'package:withme_flutter/user_post_view.dart';
 import 'package:withme_flutter/user_profile_page.dart';
 import 'package:withme_flutter/user_search_page.dart';
 import 'post_model.dart';
@@ -329,7 +330,7 @@ class _UserViewProfile extends State<UserViewProfile>{
                   backgroundColor: Colors.grey,
                   radius: 70,
                   backgroundImage: followerAvatar.isNotEmpty ?
-                  NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
+                  NetworkImage(followerAvatar) : AssetImage('assets/small_logo.png'),
                 ),
               ),
               SizedBox(height: 20,),
@@ -428,18 +429,35 @@ class _UserViewProfile extends State<UserViewProfile>{
                 primary: false,
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
-                itemCount:postList.length,
-                itemBuilder: (context,index){
+                itemCount: postList.length,
+                itemBuilder: (context, index) {
                   final post = postList[index];
-                  return UserPost.partial(
-                    name: post.name ?? 'Unknown',
-                    postImageUrl: post.postImageUrl ?? '',
-                    userPhotoUrl: post.userPhotoUrl ?? '',
-                    postId: post.postId ??'',userId: userId ?? '',
-                    comments: post.commentsNumber ?? 0,
-                    postDate: post.postDate ?? '',
-                    location: post.location ?? '',
-                    yummys: post.yummys ?? 0,);
+                  print('Post ID: ${post.postId}');
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserPostView(
+                            userId: post.userId,
+                            postId: post.postId,
+                          ),
+                        ),
+                      );
+                    },
+                    child: UserPost.partial(
+                      postId: post.postId ?? '',
+                      userId: post.userId ?? '',
+                      name: post.name ?? 'Unknown',
+                      postImageUrl: post.postImageUrl ?? 'assets/small.logo.png',
+                      userPhotoUrl: post.userPhotoUrl ?? 'assets/small_logo.png',
+                      yummys: post.yummys ?? 0,
+                      location: post.location ?? 'No location provided',
+                      postDate: post.postDate ?? 'No date provided',
+                      comments: post.commentsNumber ?? 0,
+                    ),
+                  );
                 },
               ),
             ],
@@ -455,11 +473,11 @@ class _UserViewProfile extends State<UserViewProfile>{
             backgroundColor: Colors.grey,
             radius: 20,
             backgroundImage: userAvatar.isNotEmpty ?
-              NetworkImage(userAvatar) :
-              AssetImage('assets/small_logo.png'),
+            NetworkImage(userAvatar) :
+            AssetImage('assets/small_logo.png'),
           ),
-          label: ''),
-          
+              label: ''),
+
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.grey,

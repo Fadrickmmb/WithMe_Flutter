@@ -26,6 +26,7 @@ class _UserPostView extends State<UserPostView> {
   late String postImageUrl = '';
   late String ownername = '';
   late String userPhotoUrl = '';
+  late String userAvatar = '';
   late String location = '';
   late String postDate = '';
   late int yummys = 0;
@@ -33,15 +34,46 @@ class _UserPostView extends State<UserPostView> {
   late String postId = '';
   late String date = '';
   late String text = '';
+  late String loggedUserId = '';
   late List<Comment> comments = [];
   int _selectedIndex = 0;
+  late FirebaseAuth auth = FirebaseAuth.instance;
 
   void initState(){
     super.initState();
+    _fetchUserAvatar();
     _fetchPostInfo();
     _fetchCommentInfo();
     print('Received userId: ${widget.userId}');
     print('Received postId: ${widget.postId}');
+  }
+
+  Future<void> _fetchUserAvatar() async {
+    final User? loggedUser = auth.currentUser;
+
+    if (loggedUser != null) {
+      final DatabaseReference userRef = FirebaseDatabase.instance.ref().
+          child('users/${loggedUser.uid}');
+      try{
+        final DataSnapshot snapshot = await userRef.get();
+        if (snapshot.exists) {
+          final userData = snapshot.value as Map?;
+          setState(() {
+            loggedUserId = loggedUser.uid;
+            userAvatar = userData?['userPhotoUrl'] ?? '';
+          });
+        }
+      } catch(e) {
+        print("error fetching user data $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to load user data."))
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("user not logged in."))
+      );
+    }
   }
 
   Future<void> _fetchPostInfo() async {
@@ -106,14 +138,14 @@ class _UserPostView extends State<UserPostView> {
       final String commentId = postReference.push().key ?? "";
       final DateTime today = DateTime.now();
       final String formattedDate = "${today.year.toString()}-${today.month.toString().padLeft(2,'0')}-${today.day.toString().padLeft(2,'0')}"
-        "${today.hour.toString().padLeft(2,'0')}:${today.minute.toString().padLeft(2,'0')}";
+          "${today.hour.toString().padLeft(2,'0')}:${today.minute.toString().padLeft(2,'0')}";
       final commentInfo = Comment.full(
-          name: user.displayName ?? 'Anonymous',
-          text: commentText,
-          date: formattedDate,
-          userId: user.uid,
-          postId: widget.postId,
-          commentId: commentId,
+        name: user.displayName ?? 'Anonymous',
+        text: commentText,
+        date: formattedDate,
+        userId: user.uid,
+        postId: widget.postId,
+        commentId: commentId,
       );
 
       try{
@@ -223,9 +255,67 @@ class _UserPostView extends State<UserPostView> {
     );
   }
 
+  void _showReportDialog(BuildContext context) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context){
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              width: 250,
+              decoration: BoxDecoration(
+                color: Colors.grey[850],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: IconButton(
+                      onPressed: (){
+                        Navigator.of(context).pop();
+                      },
+                      icon: Icon(Icons.close, color: Colors.white,),
+                    ),
+                  ),
+                  SizedBox(height: 20,),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+
+                              },
+                              icon: Icon(Icons.warning_amber, size: 60, color: Colors.white),
+                            ),
+                            SizedBox(height: 10,),
+                            Text("REPORT",style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+    );
+  }
+
   Future <void> _deletePost(BuildContext context)  async{
     final DatabaseReference postReference = FirebaseDatabase.instance
-        .ref().child('users/${widget.userId}userId/posts/${widget.postId}');
+        .ref().child('users/${widget.userId}/posts/${widget.postId}');
     try{
       await postReference.remove();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -236,6 +326,10 @@ class _UserPostView extends State<UserPostView> {
         content: Text("Error deleting post: $e"),),
       );
     }
+  }
+
+  Future<void> _reportPost(BuildContext context) async{
+
   }
 
   void _onItemTapped(int index) {
@@ -255,8 +349,8 @@ class _UserPostView extends State<UserPostView> {
       );
     } else if (index == 2) {
       Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => UserAddPostPage(),
+        context,
+        MaterialPageRoute(builder: (context) => UserAddPostPage(),
         ),
       );
     } else if (index == 3) {
@@ -334,7 +428,11 @@ class _UserPostView extends State<UserPostView> {
                         Spacer(),
                         GestureDetector(
                           onTap: (){
-                            _showPostDialog(context);
+                            if(widget.userId == loggedUserId) {
+                              _showPostDialog(context);
+                            } else {
+                              _showReportDialog(context);
+                            }
                           },
                           child: Row(
                             children: [
@@ -397,10 +495,10 @@ class _UserPostView extends State<UserPostView> {
                     Container(
                       padding: EdgeInsets.all(5),
                       alignment: Alignment.topLeft,
-                        child: Text(content, textAlign: TextAlign.start, style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: Text(content, textAlign: TextAlign.start, style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                       ),
                     ),
                     ListView.builder(
@@ -409,9 +507,9 @@ class _UserPostView extends State<UserPostView> {
                       itemBuilder: (context, index) {
                         final comment = comments[index];
                         return CommentWidget(
-                            name: comment.name ?? 'Anonymous',
-                            text: comment.text ?? 'No comment.',
-                            date: comment.date ?? 'Unknown date',
+                          name: comment.name ?? 'Anonymous',
+                          text: comment.text ?? 'No comment.',
+                          date: comment.date ?? 'Unknown date',
                         );
                       },
                     ),
@@ -442,48 +540,48 @@ class _UserPostView extends State<UserPostView> {
                         SizedBox(width: 20,),
                         ElevatedButton(onPressed: (){
                           showDialog(
-                              context: context,
-                              builder: (BuildContext context){
-                                TextEditingController commentController = TextEditingController();
-                                return AlertDialog(
-                                  title: Text("Add a comment:"),
-                                  content: TextField(
-                                    controller: commentController,
-                                    decoration: InputDecoration(hintText: 'Write your comment here'),
+                            context: context,
+                            builder: (BuildContext context){
+                              TextEditingController commentController = TextEditingController();
+                              return AlertDialog(
+                                title: Text("Add a comment:"),
+                                content: TextField(
+                                  controller: commentController,
+                                  decoration: InputDecoration(hintText: 'Write your comment here'),
+                                ),
+                                actions: <Widget> [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Text("Cancel"),
                                   ),
-                                  actions: <Widget> [
-                                    TextButton(
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                        child: Text("Cancel"),
-                                    ),
-                                    TextButton(
-                                        onPressed: () {
-                                          String commentText = commentController.text.trim();
-                                          if(commentText.isNotEmpty) {
-                                            _addCommentToDatabase(commentText);
-                                            Navigator.of(context).pop();
-                                          } else {
-                                            print("Comment is empty.");
-                                          }
-                                        },
-                                        child: Text("Comment"),
-                                    ),
-                                  ],
-                                );
-                              },
+                                  TextButton(
+                                    onPressed: () {
+                                      String commentText = commentController.text.trim();
+                                      if(commentText.isNotEmpty) {
+                                        _addCommentToDatabase(commentText);
+                                        Navigator.of(context).pop();
+                                      } else {
+                                        print("Comment is empty.");
+                                      }
+                                    },
+                                    child: Text("Comment"),
+                                  ),
+                                ],
+                              );
+                            },
                           );
                         }, style: ButtonStyle(
-                            backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
-                            shape: WidgetStateProperty.all(
-                              RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
+                          backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
+                          shape: WidgetStateProperty.all(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
                             ),
-                            padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
-                            fixedSize: MaterialStateProperty.all<Size>(Size(150.0, 50.0),),
                           ),
+                          padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
+                          fixedSize: MaterialStateProperty.all<Size>(Size(150.0, 50.0),),
+                        ),
                           child: Text('Comment',
                             style: TextStyle(
                               color: Colors.white,
@@ -509,8 +607,8 @@ class _UserPostView extends State<UserPostView> {
           BottomNavigationBarItem(icon: CircleAvatar(
             backgroundColor: Colors.grey,
             radius: 20,
-            backgroundImage: userPhotoUrl.isNotEmpty ?
-            NetworkImage(userPhotoUrl) : AssetImage('assets/small_logo.png'),
+            backgroundImage: userAvatar.isNotEmpty ?
+            NetworkImage(userAvatar) : AssetImage('assets/small_logo.png'),
           ),
               label: ''),
         ],
