@@ -62,10 +62,10 @@ class UserPost extends StatelessWidget {
                                   onPressed: () {
                                     _deletePost(context);
                                   },
-                                  icon: Icon(Icons.delete_outline, size: 60, color: Colors.white),
+                                  icon: Icon(Icons.warning_amber, size: 60, color: Colors.white),
                               ),
                               SizedBox(height: 10,),
-                              Text("DELETE",style: TextStyle(
+                              Text("REPORT",style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -73,30 +73,6 @@ class UserPost extends StatelessWidget {
                               ),
                             ],
                           ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                Navigator.push(context,
-                                  MaterialPageRoute(builder: (context) => UserEditPost(
-                                      userId: userId,
-                                      postId: postId),
-                                  ),
-                                );
-                              },
-                              icon: Icon(Icons.edit, size: 60, color: Colors.white),
-                            ),
-                            SizedBox(height: 10,),
-                            Text("EDIT",style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            ),
-                          ],
-                        ),
                       ),
                     ],
                   ),
