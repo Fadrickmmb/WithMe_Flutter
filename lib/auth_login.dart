@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'admin_home_page.dart';
 import 'auth_forgotPassword.dart';
+import 'mod_home_page.dart';
 import 'user_home_page.dart';
 
 class AuthLogin extends StatefulWidget {
@@ -74,13 +75,19 @@ class _AuthLoginState extends State<AuthLogin> {
       if (adminSnapshot.exists) {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AdminHomePage()));
       } else {
-        final userSnapshot = await _userDatabase.orderByChild('email').equalTo(email).get();
-        if (userSnapshot.exists) {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserHomePage()));
+        final modDatabase = FirebaseDatabase.instance.ref().child('mod');
+        final modSnapshot = await modDatabase.orderByChild('email').equalTo(email).get();
+        if (modSnapshot.exists) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ModHomePage()));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('No account found with this email'),
-          ));
+          final userSnapshot = await _userDatabase.orderByChild('email').equalTo(email).get();
+          if (userSnapshot.exists) {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserHomePage()));
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('No account found with this email'),
+            ));
+          }
         }
       }
     } catch (e) {
@@ -89,6 +96,7 @@ class _AuthLoginState extends State<AuthLogin> {
       ));
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
