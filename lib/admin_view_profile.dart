@@ -473,6 +473,7 @@ class _AdminViewProfileState extends State<AdminViewProfile> {
                   ),
                 ),
               ),
+              SizedBox(height: 10.0,),
               ElevatedButton(onPressed: changeSuspendStatus,
                   style: ButtonStyle(
                     backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
