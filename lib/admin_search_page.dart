@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'user_view_profile.dart';
 
 class AdminSearchPage extends StatefulWidget {
   const AdminSearchPage({super.key});
