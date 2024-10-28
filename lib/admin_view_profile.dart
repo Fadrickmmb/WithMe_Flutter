@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +39,7 @@ class _AdminViewProfileState extends State<AdminViewProfile> {
   late int commentsNumber = 0;
   late int yummys = 0;
   String followStatus = 'Follow';
+  String suspendStatus = 'Suspend Account';
   int _selectedIndex = 0;
   late List postList = [];
 
@@ -259,6 +261,47 @@ class _AdminViewProfileState extends State<AdminViewProfile> {
     }
   }
 
+  Future<void> checkSuspendStatus() async {
+    final snapshot = await FirebaseDatabase.instance.ref()
+        .child('suspendedUsers')
+        .get();
+
+    bool isSuspended = false;
+
+    for (var child in snapshot.children) {
+      if (child.child('userId').value == followerId) {
+        isSuspended = true;
+        break;
+      }
+    }
+
+    setState(() {
+      suspendStatus = isSuspended ? "Unsuspend Account" : "Suspend Account";
+    });
+  }
+
+  Future<void> changeSuspendStatus() async {
+    final ref = FirebaseDatabase.instance.ref().child('suspendedUsers');
+    final snapshot = await ref.get();
+
+    String? recordKey;
+
+    for (var child in snapshot.children) {
+      if (child.child('userId').value == followerId) {
+        recordKey = child.key;
+        break;
+      }
+    }
+
+    if (recordKey != null) {
+      await ref.child(recordKey).remove();
+    } else {
+      await ref.push().set({'userId': followerId});
+    }
+
+    await checkSuspendStatus();
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -429,6 +472,24 @@ class _AdminViewProfileState extends State<AdminViewProfile> {
                     fontSize: 18,
                   ),
                 ),
+              ),
+              ElevatedButton(onPressed: changeSuspendStatus,
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                  ),
+                    padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
+                    fixedSize: MaterialStateProperty.all<Size>(Size(200.0, 60.0),),
+                  ),
+                  child: Text(suspendStatus,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                    ),
+                  ),
               ),
               ListView.builder(
                 primary: false,
