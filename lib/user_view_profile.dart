@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:withme_flutter/report_model.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
 import 'package:withme_flutter/user_home_page.dart';
 import 'package:withme_flutter/user_post_view.dart';
@@ -33,6 +34,8 @@ class _UserViewProfile extends State<UserViewProfile>{
   late int commentsNumber = 0;
   late int yummys = 0;
   String followStatus = 'Follow';
+  String reportUserStatus = 'Report user';
+  bool isReported = true;
   int _selectedIndex = 0;
   late List postList = [];
 
@@ -254,6 +257,94 @@ class _UserViewProfile extends State<UserViewProfile>{
     }
   }
 
+  Future<void> _reportUser(BuildContext context) async{
+    final DatabaseReference reportUserRef = FirebaseDatabase.instance
+        .ref().child('reportedUsers');
+    final String? reportId = reportUserRef.push().key;
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    if (reportId != null) {
+      final Report reportUser = Report.reportUser(
+        reportId: reportId,
+        userId: followerId,
+        userReportingId: user?.uid,
+      );
+
+      try {
+        await reportUserRef.child(reportId).set({
+          'reportId': reportUser.reportId,
+          'userId': reportUser.userId,
+          'userReportingId': reportUser.userReportingId,
+        });
+        setState(() {
+          reportUserStatus = "User reported.";
+          isReported = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Post reported successfully.")),
+        );
+        Navigator.of(context).pop();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error reporting post: $e")),
+        );
+      }
+    }
+  }
+
+  void _showUserReportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[850],
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    icon: Icon(Icons.close),
+                  ),
+                ],
+              ),
+              Icon(Icons.warning_amber,color: Colors.white,),
+              SizedBox(height: 20),
+              Text("Are you sure you want to report this user?",style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () async {
+                      await _reportUser(context);
+                    },
+                    child: Text("Yes"),
+                  ),
+                  SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text("No"),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -407,23 +498,51 @@ class _UserViewProfile extends State<UserViewProfile>{
               ),
               ),
               SizedBox(height: 60,),
-              ElevatedButton(onPressed: changeFollowStatus,
-                style: ButtonStyle(
-                  backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
-                  shape: WidgetStateProperty.all(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(onPressed: changeFollowStatus,
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
+                      shape: WidgetStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
+                      fixedSize: MaterialStateProperty.all<Size>(Size(150.0, 60.0),),
+                    ),
+                    child: Text(followStatus,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
-                  padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
-                  fixedSize: MaterialStateProperty.all<Size>(Size(200.0, 60.0),),
-                ),
-                child: Text(followStatus,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
+                  SizedBox(width: 30),
+                  ElevatedButton(onPressed:() {
+                      if(isReported){
+                        _showUserReportDialog(context);
+                      }
+                    },
+                    style: ButtonStyle(
+                    backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
+                    shape: WidgetStateProperty.all(
+                    RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    ),
+                    ),
+                    padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
+                    fixedSize: MaterialStateProperty.all<Size>(Size(150.0, 60.0),),
+                    ),
+                    child: Text(reportUserStatus,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
               ListView.builder(
                 primary: false,

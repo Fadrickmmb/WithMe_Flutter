@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:withme_flutter/comment_design.dart';
-import 'package:withme_flutter/report_model.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
 import 'package:withme_flutter/user_edit_post.dart';
 import 'package:withme_flutter/user_edit_profile.dart';
@@ -12,17 +11,17 @@ import 'package:withme_flutter/user_search_page.dart';
 
 import 'comment_model.dart';
 
-class UserPostView extends StatefulWidget {
+class AdminPostView extends StatefulWidget {
   final String postId;
   final String userId;
 
-  UserPostView({required this.userId, required this.postId});
+  AdminPostView({required this.userId, required this.postId});
 
   @override
-  State<StatefulWidget> createState() => _UserPostView();
+  State<StatefulWidget> createState() => _AdminPostView();
 }
 
-class _UserPostView extends State<UserPostView> {
+class _AdminPostView extends State<AdminPostView> {
   late String content ='';
   late String postImageUrl = '';
   late String ownername = '';
@@ -54,7 +53,7 @@ class _UserPostView extends State<UserPostView> {
 
     if (loggedUser != null) {
       final DatabaseReference userRef = FirebaseDatabase.instance.ref().
-          child('users/${loggedUser.uid}');
+      child('users/${loggedUser.uid}');
       try{
         final DataSnapshot snapshot = await userRef.get();
         if (snapshot.exists) {
@@ -115,13 +114,10 @@ class _UserPostView extends State<UserPostView> {
           setState(() {
             comments = commentData.values.map((comment) {
               final commentMap = comment as Map<dynamic, dynamic>;
-              return Comment.full(
+              return Comment.partial(
                 name: commentMap['name'] ?? 'Anonymous',
                 date: commentMap['date'] ?? 'Unknown date',
                 text: commentMap['text'] ?? 'No content',
-                userId: commentMap['userId'] ?? 'Unknown user',
-                postId: commentMap['postId'] ?? 'Unknown post id',
-                commentId: commentMap['commentId'] ?? 'Unknown comment id',
               );
             }).toList();
           });
@@ -177,7 +173,7 @@ class _UserPostView extends State<UserPostView> {
 
   }
 
-  void _showPostDialog(BuildContext context) {
+  void _showDeleteDialog(BuildContext context) {
     showDialog(
         context: context,
         builder: (BuildContext context){
@@ -213,34 +209,10 @@ class _UserPostView extends State<UserPostView> {
                               onPressed: () {
                                 _deletePost(context);
                               },
-                              icon: Icon(Icons.delete_outline, size: 60, color: Colors.white),
+                              icon: Icon(Icons.delete_outlined, size: 60, color: Colors.white),
                             ),
                             SizedBox(height: 10,),
                             Text("DELETE",style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                Navigator.push(context,
-                                  MaterialPageRoute(builder: (context) => UserEditPost(
-                                      userId: widget.userId,
-                                      postId: widget.postId),
-                                  ),
-                                );
-                              },
-                              icon: Icon(Icons.edit, size: 60, color: Colors.white),
-                            ),
-                            SizedBox(height: 10,),
-                            Text("EDIT",style: TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -259,114 +231,6 @@ class _UserPostView extends State<UserPostView> {
     );
   }
 
-  void _showReportPostDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.grey[850],
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    icon: Icon(Icons.close),
-                  ),
-                ],
-              ),
-              Icon(Icons.warning_amber,color: Colors.white,),
-              SizedBox(height: 20),
-              Text("Are you sure you want to report this post?",style: TextStyle(
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: () async {
-                      await _reportPost(context);
-                    },
-                    child: Text("Yes"),
-                  ),
-                  SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Text("No"),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showReportCommentDialog(BuildContext context, String commentId, String postId, String commentOwnerId) {
-    print("Inside _showReportCommentDialog");
-    print("Comment ID: $commentId, Post ID: $postId, Comment Owner ID: $commentOwnerId");
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.grey[850],
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    icon: Icon(Icons.close, color: Colors.white,),
-                  ),
-                ],
-              ),
-              Icon(Icons.warning_amber,color: Colors.white,),
-              SizedBox(height: 20),
-              Text("Are you sure you want to report this comment?",style: TextStyle(
-                color: Colors.white,
-              ),
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: () async {
-                      print("Yes button clicked in Dialog");
-                      await _reportComment(commentId, postId, commentOwnerId, context);
-                    },
-                    child: Text("Yes"),
-                  ),
-                  SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Text("No"),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Future <void> _deletePost(BuildContext context)  async{
     final DatabaseReference postReference = FirebaseDatabase.instance
         .ref().child('users/${widget.userId}/posts/${widget.postId}');
@@ -379,76 +243,6 @@ class _UserPostView extends State<UserPostView> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Error deleting post: $e"),),
       );
-    }
-  }
-
-  Future<void> _reportPost(BuildContext context) async{
-    final DatabaseReference reportPostRef = FirebaseDatabase.instance
-        .ref().child('reportedPosts');
-    final String? reportId = reportPostRef.push().key;
-
-    if (reportId != null) {
-      final Report reportPostUser = Report.reportPost(
-        reportId: reportId,
-        postId: postId,
-        postOwnerId: widget.userId,
-        userReportingId: loggedUserId,
-      );
-
-      try {
-        await reportPostRef.child(reportId).set({
-          'reportId': reportPostUser.reportId,
-          'postId': reportPostUser.postId,
-          'postOwnerId': reportPostUser.postOwnerId,
-          'userReportingId': reportPostUser.userReportingId,
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Post reported successfully.")),
-        );
-        Navigator.of(context).pop();
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error reporting post: $e")),
-        );
-      }
-    }
-  }
-
-  Future<void> _reportComment(String commentId,String postId, String commentOwnerId,BuildContext context) async {
-    final DatabaseReference reportCommentRef = FirebaseDatabase.instance
-        .ref()
-        .child('reportedComments');
-    final String? reportId = reportCommentRef.push().key;
-
-    if (reportId != null) {
-      final Report reportComment = Report.reportComment(
-        reportId: reportId,
-        postId: widget.postId,
-        commentId: commentId,
-        postOwnerId: widget.userId,
-        commentOwnerId: commentOwnerId,
-        userReportingId: loggedUserId,
-      );
-
-      try {
-        await reportCommentRef.child(reportId).set({
-          'reportId': reportComment.reportId,
-          'postId': reportComment.postId,
-          'commentId': reportComment.commentId,
-          'postOwnerId': reportComment.postOwnerId,
-          'commentOwnerId': reportComment.commentOwnerId,
-          'userReportingId': reportComment.userReportingId,
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Comment reported successfully.")),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error reporting comment: $e")),
-        );
-      }
     }
   }
 
@@ -548,10 +342,8 @@ class _UserPostView extends State<UserPostView> {
                         Spacer(),
                         GestureDetector(
                           onTap: (){
-                            if(widget.userId == loggedUserId) {
-                              _showPostDialog(context);
-                            } else {
-                              _showReportPostDialog(context);
+                            if(widget.userId != loggedUserId) {
+                              _showDeleteDialog(context);
                             }
                           },
                           child: Row(
@@ -629,19 +421,7 @@ class _UserPostView extends State<UserPostView> {
                         return CommentWidget(
                           name: comment.name ?? 'Anonymous',
                           text: comment.text ?? 'No comment.',
-                          date: comment.date ?? 'Unknown date',
-                          reportComment: (){
-                            print("Checking comment data:");
-                            print("Comment ID: ${comment.commentId}");
-                            print("User ID: ${comment.userId}");
-                            if (comment.commentId != null && comment.userId != null) {
-                              _showReportCommentDialog(context, comment.commentId!, widget.postId, comment.userId!);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("Error reporting comment.")),
-                              );
-                            }
-                          },
+                          date: comment.date ?? 'Unknown date', reportComment: (){},
                         );
                       },
                     ),
