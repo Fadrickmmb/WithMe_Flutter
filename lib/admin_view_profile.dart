@@ -10,6 +10,7 @@ import 'package:withme_flutter/user_profile_page.dart';
 import 'package:withme_flutter/user_search_page.dart';
 import 'admin_add_post_page.dart';
 import 'admin_home_page.dart';
+import 'admin_post_view.dart';
 import 'admin_profile_page.dart';
 import 'admin_search_page.dart';
 import 'post_model.dart';
@@ -506,7 +507,7 @@ class _AdminViewProfileState extends State<AdminViewProfile> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => UserPostView(
+                          builder: (context) => AdminPostView(
                             userId: post.userId,
                             postId: post.postId,
                           ),
