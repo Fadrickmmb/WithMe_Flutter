@@ -370,7 +370,6 @@ class _AdminViewProfileState extends State<AdminViewProfile> {
                   ],
                 ),
               ),
-              //insert content here
               Container(
                 alignment: Alignment.center,
                 padding: EdgeInsets.fromLTRB(0, 50, 0, 0),
