@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:withme_flutter/admin_add_post_page.dart';
-import 'package:withme_flutter/admin_profile_page.dart';
-import 'package:withme_flutter/admin_search_page.dart';
+import 'package:withme_flutter/mod_add_post_page.dart';
+import 'package:withme_flutter/mod_profile_page.dart';
+import 'package:withme_flutter/mod_search_page.dart';
 
-class AdminHomePage extends StatefulWidget {
+class ModHomePage extends StatefulWidget {
   @override
-  _AdminHomePageState createState() => _AdminHomePageState();
+  _ModHomePageState createState() => _ModHomePageState();
 }
 
-class _AdminHomePageState extends State<AdminHomePage> {
+class _ModHomePageState extends State<ModHomePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final DatabaseReference _adminRef = FirebaseDatabase.instance.ref().child('admin');
+  final DatabaseReference _modRef = FirebaseDatabase.instance.ref().child('mod');
   List<Map<String, dynamic>> _posts = [];
   bool _isLoading = true;
   int _selectedIndex = 0;
@@ -22,7 +22,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
   void initState() {
     super.initState();
     _fetchPosts();
-    _fetchAdminAvatar();
+    _fetchModAvatar();
   }
 
   Future<void> _fetchPosts() async {
@@ -30,7 +30,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
       final User? currentUser = _auth.currentUser;
       if (currentUser == null) return;
 
-      final DataSnapshot snapshot = await _adminRef.child(currentUser.uid).child('posts').get();
+      final DataSnapshot snapshot = await _modRef.child(currentUser.uid).child('posts').get();
 
       if (snapshot.exists) {
         final Map<dynamic, dynamic> postsData = snapshot.value as Map<dynamic, dynamic>;
@@ -56,12 +56,12 @@ class _AdminHomePageState extends State<AdminHomePage> {
     }
   }
 
-  Future<void> _fetchAdminAvatar() async {
+  Future<void> _fetchModAvatar() async {
     try {
       final User? currentUser = _auth.currentUser;
       if (currentUser == null) return;
 
-      final DataSnapshot snapshot = await _adminRef.child(currentUser.uid).get();
+      final DataSnapshot snapshot = await _modRef.child(currentUser.uid).get();
 
       if (snapshot.exists) {
         final Map<dynamic, dynamic> userData = snapshot.value as Map<dynamic, dynamic>;
@@ -70,7 +70,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
         });
       }
     } catch (e) {
-      print("Error fetching admin avatar: $e");
+      print("Error fetching mod avatar: $e");
     }
   }
 
@@ -85,19 +85,19 @@ class _AdminHomePageState extends State<AdminHomePage> {
       case 1:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => AdminSearchPage()),
+          MaterialPageRoute(builder: (context) => ModSearchPage()),
         );
         break;
       case 2:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => AdminAddPostPage()),
+          MaterialPageRoute(builder: (context) => ModAddPostPage()),
         );
         break;
       case 3:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => AdminProfilePage()),
+          MaterialPageRoute(builder: (context) => ModProfilePage()),
         );
         break;
     }
@@ -107,7 +107,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Admin Home'),
+        title: Text('Moderator Home'),
         backgroundColor: Colors.grey,
       ),
       body: _isLoading
