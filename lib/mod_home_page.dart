@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/services.dart';
+import 'package:withme_flutter/admin_home_page.dart';
 import 'package:withme_flutter/mod_search_page.dart';
+
+import 'admin_profile_page.dart';
+import 'admin_search_page.dart';
 
 class ModHomePage extends StatefulWidget {
   const ModHomePage({super.key});
@@ -37,10 +41,19 @@ class _ModHomePageState extends State<ModHomePage> {
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => ModSearchPage()),
+                      MaterialPageRoute(builder: (context) => AdminSearchPage()),
                     );
                   },
                   child: Text('To Search Page'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => AdminProfilePage()),
+                    );
+                  },
+                  child: Text('To Profile Page'),
                 ),
               ],
             ),
