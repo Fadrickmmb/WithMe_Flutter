@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:withme_flutter/comment_design.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
+import 'package:withme_flutter/user_edit_post.dart';
 import 'package:withme_flutter/user_edit_profile.dart';
 import 'package:withme_flutter/user_home_page.dart';
 import 'package:withme_flutter/user_profile_page.dart';
@@ -32,7 +33,7 @@ class _UserPostView extends State<UserPostView> {
   late String postId = '';
   late String date = '';
   late String text = '';
-  late List<Comment> comments = []; //String is the comment id and Comment is the object comment
+  late List<Comment> comments = [];
   int _selectedIndex = 0;
 
   void initState(){
@@ -55,7 +56,7 @@ class _UserPostView extends State<UserPostView> {
             ownername = postData?['name'] ?? '';
             content = postData?['content'] ?? '';
             postImageUrl = postData?['postImageUrl'] ?? '';
-            userPhotoUrl = postData?['userImageUrl'] ?? '';
+            userPhotoUrl = postData?['userPhotoUrl'] ?? '';
             location = postData?['location'] ?? '';
             postDate = postData?['postDate'] ?? '';
             yummys = int.tryParse(postData?['yummys']?.toString() ?? '0') ?? 0;
@@ -95,6 +96,148 @@ class _UserPostView extends State<UserPostView> {
     }
   }
 
+  Future<void> _addCommentToDatabase(String commentText) async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final user = auth.currentUser;
+    final DatabaseReference postReference = FirebaseDatabase.instance
+        .ref().child('users/${widget.userId}/posts/${widget.postId}/comments');
+
+    if(user != null) {
+      final String commentId = postReference.push().key ?? "";
+      final DateTime today = DateTime.now();
+      final String formattedDate = "${today.year.toString()}-${today.month.toString().padLeft(2,'0')}-${today.day.toString().padLeft(2,'0')}"
+        "${today.hour.toString().padLeft(2,'0')}:${today.minute.toString().padLeft(2,'0')}";
+      final commentInfo = Comment.full(
+          name: user.displayName ?? 'Anonymous',
+          text: commentText,
+          date: formattedDate,
+          userId: user.uid,
+          postId: widget.postId,
+          commentId: commentId,
+      );
+
+      try{
+        await postReference.child(commentId).set({
+          'commentId': commentInfo.commentId,
+          'name': commentInfo.name,
+          'text': commentInfo.text,
+          'date': commentInfo.date,
+          'userId': commentInfo.userId,
+          'postId': commentInfo.postId,
+        });
+        setState(() {
+          comments.add(Comment.partial(
+              name: commentInfo.name,
+              text: commentInfo.text,
+              date: commentInfo.date
+          ));
+        });
+      } catch (e) {
+        print("Error adding comment: $e");
+      }
+    } else {
+      print("User is not logged in.");
+    }
+
+  }
+
+  void _showPostDialog(BuildContext context) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context){
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              width: 250,
+              decoration: BoxDecoration(
+                color: Colors.grey[850],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: IconButton(
+                      onPressed: (){
+                        Navigator.of(context).pop();
+                      },
+                      icon: Icon(Icons.close, color: Colors.white,),
+                    ),
+                  ),
+                  SizedBox(height: 20,),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                _deletePost(context);
+                              },
+                              icon: Icon(Icons.delete_outline, size: 60, color: Colors.white),
+                            ),
+                            SizedBox(height: 10,),
+                            Text("DELETE",style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                Navigator.push(context,
+                                  MaterialPageRoute(builder: (context) => UserEditPost(
+                                      userId: widget.userId,
+                                      postId: widget.postId),
+                                  ),
+                                );
+                              },
+                              icon: Icon(Icons.edit, size: 60, color: Colors.white),
+                            ),
+                            SizedBox(height: 10,),
+                            Text("EDIT",style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+    );
+  }
+
+  Future <void> _deletePost(BuildContext context)  async{
+    final DatabaseReference postReference = FirebaseDatabase.instance
+        .ref().child('users/${widget.userId}userId/posts/${widget.postId}');
+    try{
+      await postReference.remove();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Post deleted successfuly."),),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Error deleting post: $e"),),
+      );
+    }
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -113,8 +256,7 @@ class _UserPostView extends State<UserPostView> {
     } else if (index == 2) {
       Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => UserPostView(userId: widget.userId, postId: postId,
-          ),
+            MaterialPageRoute(builder: (context) => UserAddPostPage(),
         ),
       );
     } else if (index == 3) {
@@ -190,7 +332,20 @@ class _UserPostView extends State<UserPostView> {
                           ],
                         ),
                         Spacer(),
-                        Icon(Icons.more_vert),
+                        GestureDetector(
+                          onTap: (){
+                            _showPostDialog(context);
+                          },
+                          child: Row(
+                            children: [
+                              Icon(Icons.circle, size: 7),
+                              SizedBox(width: 5,),
+                              Icon(Icons.circle, size: 7),
+                              SizedBox(width: 5,),
+                              Icon(Icons.circle, size: 7),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -238,7 +393,16 @@ class _UserPostView extends State<UserPostView> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10,),
+                    Container(
+                      padding: EdgeInsets.all(5),
+                      alignment: Alignment.topLeft,
+                        child: Text(content, textAlign: TextAlign.start, style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                     ListView.builder(
                       shrinkWrap: true,
                       itemCount: comments.length,
@@ -251,26 +415,83 @@ class _UserPostView extends State<UserPostView> {
                         );
                       },
                     ),
-                    SizedBox(height: 40,),
-                    ElevatedButton(onPressed: (){
-                      Navigator.pop(context);
-                    },
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                    SizedBox(height: 20,),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(onPressed: (){
+                          Navigator.pop(context);
+                        },
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
+                            fixedSize: MaterialStateProperty.all<Size>(Size(150.0, 50.0),),
+                          ),
+                          child: Text('Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
-                        padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
-                        fixedSize: MaterialStateProperty.all<Size>(Size(200.0, 60.0),),
-                      ),
-                      child: Text('Back',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
+                        SizedBox(width: 20,),
+                        ElevatedButton(onPressed: (){
+                          showDialog(
+                              context: context,
+                              builder: (BuildContext context){
+                                TextEditingController commentController = TextEditingController();
+                                return AlertDialog(
+                                  title: Text("Add a comment:"),
+                                  content: TextField(
+                                    controller: commentController,
+                                    decoration: InputDecoration(hintText: 'Write your comment here'),
+                                  ),
+                                  actions: <Widget> [
+                                    TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text("Cancel"),
+                                    ),
+                                    TextButton(
+                                        onPressed: () {
+                                          String commentText = commentController.text.trim();
+                                          if(commentText.isNotEmpty) {
+                                            _addCommentToDatabase(commentText);
+                                            Navigator.of(context).pop();
+                                          } else {
+                                            print("Comment is empty.");
+                                          }
+                                        },
+                                        child: Text("Comment"),
+                                    ),
+                                  ],
+                                );
+                              },
+                          );
+                        }, style: ButtonStyle(
+                            backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
+                            fixedSize: MaterialStateProperty.all<Size>(Size(150.0, 50.0),),
+                          ),
+                          child: Text('Comment',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -285,7 +506,13 @@ class _UserPostView extends State<UserPostView> {
           BottomNavigationBarItem(icon: Image.asset('assets/withme_home.png', height: 30), label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_search.png', height: 30), label: ''),
           BottomNavigationBarItem(icon: Image.asset('assets/withme_newpost.png', height: 30), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person, size: 36), label: ''),
+          BottomNavigationBarItem(icon: CircleAvatar(
+            backgroundColor: Colors.grey,
+            radius: 20,
+            backgroundImage: userPhotoUrl.isNotEmpty ?
+            NetworkImage(userPhotoUrl) : AssetImage('assets/small_logo.png'),
+          ),
+              label: ''),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.grey,

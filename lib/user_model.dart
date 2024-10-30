@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:withme_flutter/post_model.dart';
 
@@ -33,3 +34,4 @@ class User {
   Map<String, Post>? getPosts() => posts;
   setPosts(Map<String, Post> posts) => this.posts = posts;
 }
+

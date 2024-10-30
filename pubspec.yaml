@@ -44,9 +44,6 @@ dependencies:
   fluttertoast: any
 
 
-  get:
-
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

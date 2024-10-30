@@ -21,6 +21,7 @@ class CommentWidget extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
               ),
+              SizedBox(width: 20,),
               Text(date,style: TextStyle(
                   fontSize: 14,
                 ),
