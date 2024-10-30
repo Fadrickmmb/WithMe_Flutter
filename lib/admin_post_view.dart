@@ -3,13 +3,16 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:withme_flutter/comment_design.dart';
 import 'package:withme_flutter/user_add_post_page.dart';
-import 'package:withme_flutter/user_edit_post.dart';
-import 'package:withme_flutter/user_edit_profile.dart';
 import 'package:withme_flutter/user_home_page.dart';
 import 'package:withme_flutter/user_profile_page.dart';
 import 'package:withme_flutter/user_search_page.dart';
 
+import 'admin_add_post_page.dart';
+import 'admin_home_page.dart';
+import 'admin_profile_page.dart';
+import 'admin_search_page.dart';
 import 'comment_model.dart';
+import 'mod_home_page.dart';
 
 class AdminPostView extends StatefulWidget {
   final String postId;
@@ -104,7 +107,8 @@ class _AdminPostView extends State<AdminPostView> {
   }
 
   Future<void> _fetchCommentInfo() async {
-    final DatabaseReference commentsRef = FirebaseDatabase.instance.ref().child('users/${widget.userId}/posts/${widget.postId}/comments');
+    final DatabaseReference commentsRef = FirebaseDatabase.instance.ref()
+        .child('users/${widget.userId}/posts/${widget.postId}/comments');
 
     try {
       final DataSnapshot commentSnapshot = await commentsRef.get();
@@ -114,10 +118,13 @@ class _AdminPostView extends State<AdminPostView> {
           setState(() {
             comments = commentData.values.map((comment) {
               final commentMap = comment as Map<dynamic, dynamic>;
-              return Comment.partial(
+              return Comment.full(
                 name: commentMap['name'] ?? 'Anonymous',
                 date: commentMap['date'] ?? 'Unknown date',
                 text: commentMap['text'] ?? 'No content',
+                userId: commentMap['userId'] ?? 'Unknown user',
+                postId: commentMap['postId'] ?? 'Unknown post id',
+                commentId: commentMap['commentId'] ?? 'Unknown comment id',
               );
             }).toList();
           });
@@ -173,7 +180,7 @@ class _AdminPostView extends State<AdminPostView> {
 
   }
 
-  void _showDeleteDialog(BuildContext context) {
+  void _showDeletePostDialog(BuildContext context) {
     showDialog(
         context: context,
         builder: (BuildContext context){
@@ -246,31 +253,148 @@ class _AdminPostView extends State<AdminPostView> {
     }
   }
 
-  void _onItemTapped(int index) {
+  void _showDeleteCommentDialog(BuildContext context, String commentId, String postId, String userId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[850],
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    icon: Icon(Icons.close, color: Colors.white),
+                  ),
+                ],
+              ),
+              Icon(Icons.delete_outlined, color: Colors.white),
+              SizedBox(height: 20),
+              Text(
+                "Are you sure you want to delete this comment?",
+                style: TextStyle(color: Colors.white),
+              ),
+              SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _deleteComment(context, commentId, postId, userId);
+                    },
+                    child: Text("Yes"),
+                  ),
+                  SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text("No"),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteComment(BuildContext context, String commentId, String postId, String userId) async {
+    final DatabaseReference commentReference = FirebaseDatabase.instance.ref()
+        .child('users/$userId/posts/$postId/comments/$commentId');
+    final DatabaseReference postReference = FirebaseDatabase.instance.ref()
+        .child('users/$userId/posts/$postId');
+
+    try {
+      await commentReference.remove();
+      setState(() {
+        comments.removeWhere((comment) => comment.commentId == commentId);
+        commentsNumber -= 1;
+      });
+
+      await postReference.update({
+        'commentsNumber': commentsNumber,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Comment deleted successfully.")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error deleting comment: $e")),
+      );
+    }
+  }
+
+  Future<void> _onItemTapped(int index) async {
     setState(() {
       _selectedIndex = index;
     });
 
     if (index == 0) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => UserHomePage()),
-      );
+      final FirebaseAuth auth = FirebaseAuth.instance;
+      final User? user = auth.currentUser;
+
+      if (user != null) {
+        try {
+          final DatabaseReference adminRef = FirebaseDatabase.instance.ref().child('admin/${user.uid}');
+          final DataSnapshot adminSnapshot = await adminRef.get();
+
+          if (adminSnapshot.exists) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AdminHomePage()),
+            );
+            return;
+          }
+
+          final DatabaseReference modRef = FirebaseDatabase.instance.ref().child('mod/${user.uid}');
+          final DataSnapshot modSnapshot = await modRef.get();
+
+          if (modSnapshot.exists) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ModHomePage()),
+            );
+            return;
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("User role not found.")),
+          );
+
+        } catch (e) {
+          print("Error checking user role: $e");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to load user role.")),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("User not logged in.")),
+        );
+      }
     } else if (index == 1) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => UserSearchPage()),
+        MaterialPageRoute(builder: (context) => AdminSearchPage()),
       );
     } else if (index == 2) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => UserAddPostPage(),
-        ),
+        MaterialPageRoute(builder: (context) => AdminAddPostPage()),
       );
     } else if (index == 3) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => UserProfilePage()),
+        MaterialPageRoute(builder: (context) => AdminProfilePage()),
       );
     }
   }
@@ -343,7 +467,7 @@ class _AdminPostView extends State<AdminPostView> {
                         GestureDetector(
                           onTap: (){
                             if(widget.userId != loggedUserId) {
-                              _showDeleteDialog(context);
+                              _showDeletePostDialog(context);
                             }
                           },
                           child: Row(
@@ -421,7 +545,16 @@ class _AdminPostView extends State<AdminPostView> {
                         return CommentWidget(
                           name: comment.name ?? 'Anonymous',
                           text: comment.text ?? 'No comment.',
-                          date: comment.date ?? 'Unknown date', reportComment: (){},
+                          date: comment.date ?? 'Unknown date',
+                          reportComment: (){
+                            if (comment.commentId != null && comment.userId != null) {
+                              _showDeleteCommentDialog(context, comment.commentId!, comment.postId!, comment.userId!);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Error reporting comment.")),
+                              );
+                            }
+                          },
                         );
                       },
                     ),

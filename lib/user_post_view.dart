@@ -630,10 +630,7 @@ class _UserPostView extends State<UserPostView> {
                           name: comment.name ?? 'Anonymous',
                           text: comment.text ?? 'No comment.',
                           date: comment.date ?? 'Unknown date',
-                          reportComment: (){
-                            print("Checking comment data:");
-                            print("Comment ID: ${comment.commentId}");
-                            print("User ID: ${comment.userId}");
+                          reportComment: (){;
                             if (comment.commentId != null && comment.userId != null) {
                               _showReportCommentDialog(context, comment.commentId!, widget.postId, comment.userId!);
                             } else {
