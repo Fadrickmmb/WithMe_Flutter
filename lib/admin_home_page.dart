@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:withme_flutter/admin_dashboard.dart';
 import 'package:withme_flutter/admin_search_page.dart';
 import 'admin_create_user.dart';
 
@@ -51,6 +52,16 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   );
                 },
                 child: Text('To Search'),
+              ),
+              SizedBox(height: 20.0),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => AdminDashboard()),
+                  );
+                },
+                child: Text('To Dashboard'),
               ),
             ],
           ),
