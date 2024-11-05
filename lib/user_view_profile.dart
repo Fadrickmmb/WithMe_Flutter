@@ -456,11 +456,6 @@ class _UserViewProfile extends State<UserViewProfile>{
                       ),
                     ),
                     Expanded(child: SizedBox.shrink()),
-                    Container(
-                      padding: EdgeInsets.fromLTRB(0,0,10,0),
-                      alignment: Alignment.centerRight,
-                      child: Icon(Icons.notifications),
-                    ),
                   ],
                 ),
               ),
@@ -572,24 +567,24 @@ class _UserViewProfile extends State<UserViewProfile>{
                   ),
                   SizedBox(width: 30),
                   ElevatedButton(onPressed:() {
-                      if(isReported){
-                        _showUserReportDialog(context);
-                      }
-                    },
+                    if(isReported){
+                      _showUserReportDialog(context);
+                    }
+                  },
                     style: ButtonStyle(
-                    backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
-                    shape: WidgetStateProperty.all(
-                    RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    ),
-                    ),
-                    padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
-                    fixedSize: MaterialStateProperty.all<Size>(Size(150.0, 60.0),),
+                      backgroundColor: WidgetStatePropertyAll<Color>(Color(0xFF1A2F31)),
+                      shape: WidgetStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      padding: WidgetStateProperty.all<EdgeInsets>(EdgeInsets.all(10),),
+                      fixedSize: MaterialStateProperty.all<Size>(Size(150.0, 60.0),),
                     ),
                     child: Text(reportUserStatus,
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18
+                          color: Colors.white,
+                          fontSize: 18
                       ),
                     ),
                   ),
