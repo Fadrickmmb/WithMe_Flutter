@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:withme_flutter/admin_dashboard.dart';
 import 'package:withme_flutter/admin_search_page.dart';
 import 'admin_create_user.dart';
 import 'admin_profile_page.dart';
@@ -58,10 +59,16 @@ class _AdminHomePageState extends State<AdminHomePage> {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
+
                     MaterialPageRoute(builder: (context) => AdminProfilePage()),
                   );
                 },
                 child: Text('To Profile'),
+
+                    MaterialPageRoute(builder: (context) => AdminDashboard()),
+                  );
+                },
+                child: Text('To Dashboard'),
               ),
             ],
           ),
