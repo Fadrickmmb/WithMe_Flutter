@@ -59,12 +59,16 @@ class _AdminHomePageState extends State<AdminHomePage> {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-
                     MaterialPageRoute(builder: (context) => AdminProfilePage()),
                   );
                 },
                 child: Text('To Profile'),
-
+              ),
+              SizedBox(height: 20.0),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
                     MaterialPageRoute(builder: (context) => AdminDashboard()),
                   );
                 },
