@@ -1,63 +1,237 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/services.dart';
-import 'package:withme_flutter/admin_home_page.dart';
+import 'package:withme_flutter/mod_add_post_page.dart';
+import 'package:withme_flutter/mod_profile_page.dart';
 import 'package:withme_flutter/mod_search_page.dart';
 
-import 'admin_profile_page.dart';
-import 'admin_search_page.dart';
-
 class ModHomePage extends StatefulWidget {
-  const ModHomePage({super.key});
-
   @override
-  State<ModHomePage> createState() => _ModHomePageState();
+  _ModHomePageState createState() => _ModHomePageState();
 }
 
 class _ModHomePageState extends State<ModHomePage> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseReference _modRef = FirebaseDatabase.instance.ref().child('mod');
+  List<Map<String, dynamic>> _posts = [];
+  bool _isLoading = true;
+  int _selectedIndex = 0;
+  String userAvatar = '';
+
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _fetchPosts();
+    _fetchModAvatar();
   }
 
+  Future<void> _fetchPosts() async {
+    try {
+      final User? currentUser = _auth.currentUser;
+      if (currentUser == null) return;
 
+      final DataSnapshot snapshot = await _modRef.child(currentUser.uid).child('posts').get();
+
+      if (snapshot.exists) {
+        final Map<dynamic, dynamic> postsData = snapshot.value as Map<dynamic, dynamic>;
+
+        List<Map<String, dynamic>> posts = postsData.values.map((post) {
+          return Map<String, dynamic>.from(post as Map);
+        }).toList();
+
+        setState(() {
+          _posts = posts;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error fetching posts: $e");
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchModAvatar() async {
+    try {
+      final User? currentUser = _auth.currentUser;
+      if (currentUser == null) return;
+
+      final DataSnapshot snapshot = await _modRef.child(currentUser.uid).get();
+
+      if (snapshot.exists) {
+        final Map<dynamic, dynamic> userData = snapshot.value as Map<dynamic, dynamic>;
+        setState(() {
+          userAvatar = userData['userPhotoUrl'] ?? '';
+        });
+      }
+    } catch (e) {
+      print("Error fetching mod avatar: $e");
+    }
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        break;
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ModSearchPage()),
+        );
+        break;
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ModAddPostPage()),
+        );
+        break;
+      case 3:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ModProfilePage()),
+        );
+        break;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
+      appBar: AppBar(
+        title: Text('Moderator Home'),
+        backgroundColor: Colors.grey,
+      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : _posts.isEmpty
+          ? Center(child: Text("No posts available"))
+          : ListView.builder(
+        itemCount: _posts.length,
+        itemBuilder: (context, index) {
+          final post = _posts[index];
+          return _buildPostCard(post);
+        },
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        items: [
+          BottomNavigationBarItem(
+            icon: Image.asset('assets/withme_home.png', height: 30),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Image.asset('assets/withme_search.png', height: 30),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Image.asset('assets/withme_newpost.png', height: 30),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: CircleAvatar(
+              backgroundColor: Colors.grey,
+              radius: 20,
+              backgroundImage: userAvatar.isNotEmpty
+                  ? NetworkImage(userAvatar)
+                  : AssetImage('assets/small_logo.png') as ImageProvider,
+            ),
+            label: '',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
+      ),
+    );
+  }
+
+  Widget _buildPostCard(Map<String, dynamic> post) {
+    return Card(
+      margin: EdgeInsets.all(10),
+      child: Padding(
+        padding: EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Text(
-                  'MOD HOME PAGE',
-                  style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
+                CircleAvatar(
+                  backgroundImage: post['userPhotoUrl'] != null
+                      ? NetworkImage(post['userPhotoUrl'])
+                      : AssetImage('assets/small_logo.png') as ImageProvider,
+                  radius: 25,
                 ),
-                SizedBox(height: 40.0),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => AdminSearchPage()),
-                    );
-                  },
-                  child: Text('To Search Page'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => AdminProfilePage()),
-                    );
-                  },
-                  child: Text('To Profile Page'),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        post['userName'] ?? 'Unknown User',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Text(post['location'] ?? ''),
+                    ],
+                  ),
                 ),
               ],
             ),
-          )
+            SizedBox(height: 10),
+            Text(post['content'] ?? ''),
+            SizedBox(height: 10),
+            post['postImageUrl'] != null
+                ? Image.network(post['postImageUrl'])
+                : SizedBox.shrink(),
+            SizedBox(height: 10),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Text(
+                post['postDate'] ?? '',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ),
+            SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildActionButton(Icons.thumb_up, "Like", () {
+                  print("Like button pressed for post: ${post['content']}");
+                }),
+                _buildActionButton(Icons.comment, "Comment", () {
+                  print("Comment button pressed for post: ${post['content']}");
+                }),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(IconData icon, String label, VoidCallback onPressed) {
+    return Flexible(
+      child: InkWell(
+        onTap: onPressed,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: Colors.grey),
+            SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }

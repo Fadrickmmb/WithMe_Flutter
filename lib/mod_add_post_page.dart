@@ -6,28 +6,25 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-class UserAddPostPage extends StatefulWidget {
+class ModAddPostPage extends StatefulWidget {
   @override
-  _UserAddPostPageState createState() => _UserAddPostPageState();
+  _ModAddPostPageState createState() => _ModAddPostPageState();
 }
 
-class _UserAddPostPageState extends State<UserAddPostPage> {
+class _ModAddPostPageState extends State<ModAddPostPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref().child('admin');
   final Reference _storageRef = FirebaseStorage.instance.ref().child('posts');
-  DatabaseReference getUserPostRef(String userId) {
-    return FirebaseDatabase.instance.ref().child('users/$userId/posts');
-  }
-
-  final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _contentController = TextEditingController();
-
-  File? _imageFile;
   final ImagePicker _picker = ImagePicker();
-  bool _isLoading = false;
 
-  User? _currentUser;
+  final TextEditingController _contentController = TextEditingController();
   String _userName = '';
   String _userPhotoUrl = '';
+  User? _currentUser;
+  File? _imageFile;
+
+  bool _isLoading = false;
+  String _location = '';
 
   @override
   void initState() {
@@ -38,12 +35,12 @@ class _UserAddPostPageState extends State<UserAddPostPage> {
 
   Future<void> _fetchUserInfo() async {
     if (_currentUser != null) {
-      final DatabaseReference userRef = FirebaseDatabase.instance.ref().child('users/${_currentUser!.uid}');
+      final DatabaseReference userRef = _dbRef.child(_currentUser!.uid);
       final DataSnapshot snapshot = await userRef.get();
       if (snapshot.exists) {
         final userData = snapshot.value as Map;
         setState(() {
-          _userName = userData['name'] ?? 'User';
+          _userName = userData['name'] ?? 'Moderator';
           _userPhotoUrl = userData['userPhotoUrl'] ?? '';
         });
       }
@@ -60,7 +57,7 @@ class _UserAddPostPageState extends State<UserAddPostPage> {
   }
 
   Future<void> _createPost() async {
-    if (_locationController.text.isEmpty || _contentController.text.isEmpty || _imageFile == null) {
+    if (_contentController.text.isEmpty || _imageFile == null) {
       Fluttertoast.showToast(msg: "Please complete all fields and select a photo");
       return;
     }
@@ -76,21 +73,18 @@ class _UserAddPostPageState extends State<UserAddPostPage> {
       final UploadTask uploadTask = postImageRef.putFile(_imageFile!);
       final TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => {});
       final String postImageUrl = await taskSnapshot.ref.getDownloadURL();
-      final DatabaseReference userPostRef = getUserPostRef(_currentUser!.uid).child(postId);
 
       final postData = {
         'content': _contentController.text,
-        'location': _locationController.text,
+        'location': _location,
         'postImageUrl': postImageUrl,
         'userId': _currentUser!.uid,
         'userName': _userName,
         'userPhotoUrl': _userPhotoUrl,
         'postDate': DateTime.now().toString(),
-        'yummys': 0,
-        'commentsNumber': 0,
       };
 
-      await userPostRef.set(postData);
+      await _dbRef.child(_currentUser!.uid).child('posts').child(postId).set(postData);
 
       Fluttertoast.showToast(msg: "Post created successfully!");
       _clearFields();
@@ -106,9 +100,9 @@ class _UserAddPostPageState extends State<UserAddPostPage> {
 
   void _clearFields() {
     setState(() {
-      _locationController.clear();
       _contentController.clear();
       _imageFile = null;
+      _location = '';
     });
   }
 
@@ -121,7 +115,7 @@ class _UserAddPostPageState extends State<UserAddPostPage> {
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
-          : SingleChildScrollView( // Wrap content in a scrollable view
+          : SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -136,26 +130,14 @@ class _UserAddPostPageState extends State<UserAddPostPage> {
                         : AssetImage('assets/small_logo.png') as ImageProvider,
                   ),
                   const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _userName,
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                  Text(
+                    _userName,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
               SizedBox(height: 20),
-              TextField(
-                controller: _locationController,
-                decoration: InputDecoration(
-                  labelText: "Location",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 20),
+
               TextField(
                 controller: _contentController,
                 decoration: InputDecoration(
@@ -165,6 +147,7 @@ class _UserAddPostPageState extends State<UserAddPostPage> {
                 maxLines: 3,
               ),
               SizedBox(height: 20),
+
               _imageFile != null
                   ? Image.file(_imageFile!)
                   : IconButton(
@@ -173,6 +156,10 @@ class _UserAddPostPageState extends State<UserAddPostPage> {
                 iconSize: 50,
               ),
               SizedBox(height: 20),
+
+              Text("Location: $_location"),
+              SizedBox(height: 20),
+
               ElevatedButton(
                 onPressed: _createPost,
                 child: Text('Post'),
