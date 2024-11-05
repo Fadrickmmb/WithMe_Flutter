@@ -8,23 +8,23 @@ import 'package:withme_flutter/user_post_view.dart';
 import 'package:withme_flutter/user_profile_page.dart';
 import 'package:withme_flutter/user_search_page.dart';
 import 'package:withme_flutter/user_view_profile.dart';
-import 'follower_model.dart';
+import 'notification_model.dart';
 import 'post_model.dart';
 import 'user_post.dart';
 
-class UserFollowers extends StatefulWidget{
+class UserNotifications extends StatefulWidget{
   final String userId;
-  UserFollowers({required this.userId});
+  UserNotifications({required this.userId});
 
   @override
-  State<StatefulWidget> createState() => _UserFollowers();
+  State<StatefulWidget> createState() => _UserNotifications();
 }
 
-class _UserFollowers extends State<UserFollowers>{
+class _UserNotifications extends State<UserNotifications>{
   late String name = '';
   late String userId = '';
   late String userAvatar = '';
-  late List<Follower> followersList = [];
+  late List<NotificationModel> notificationList = [];
   int _selectedIndex = 0;
   FirebaseAuth auth = FirebaseAuth.instance;
   DatabaseReference reference = FirebaseDatabase.instance.ref().child('users');
@@ -33,7 +33,7 @@ class _UserFollowers extends State<UserFollowers>{
   void initState() {
     super.initState();
     _fetchInfo();
-    _fetchFollowers();
+    _fetchNotification();
   }
 
   Future<void> _fetchInfo() async {
@@ -68,48 +68,53 @@ class _UserFollowers extends State<UserFollowers>{
     }
   }
 
-  Future<void> _fetchFollowers() async {
-    DatabaseReference followersReference =
-    reference.child(widget.userId).child('followers');
+  Future<void> _fetchNotification() async {
+    DatabaseReference notificationReference =
+    reference.child(widget.userId).child('notifications');
 
     try {
-      final DatabaseEvent event = await followersReference.once();
+      final DatabaseEvent event = await notificationReference.once();
       if (event.snapshot.exists) {
-        Map<dynamic, dynamic> followersData =
+        Map<dynamic, dynamic> notificationsData =
         event.snapshot.value as Map<dynamic, dynamic>;
 
-        List<Future<void>> futures = [];
-        List<Follower> tempFollowersList = [];
+        List<NotificationModel> tempNotificationsList = [];
 
-        followersData.forEach((followerId, _) {
-          var future = reference.child(followerId).once().then((DatabaseEvent userEvent) {
-            if (userEvent.snapshot.exists) {
-              var userData = userEvent.snapshot.value as Map<dynamic, dynamic>;
-              Follower follower = Follower(
-                id: userData['id'] ?? '',
-                name: userData['name'] ?? 'Unknown',
-                userPhotoUrl: userData['userPhotoUrl'] ?? '',
-              );
-              tempFollowersList.add(follower);
-            } else {
-              print("User data is null for ID: $followerId");
-            }
-          }).catchError((error) {
-            print("Error loading user data: $error");
-          });
-          futures.add(future);
+        notificationsData.forEach((notificationId, notificationData) {
+          var userData = notificationData as Map<dynamic, dynamic>;
+          if (userData.containsKey('postId')) {
+            NotificationModel notification = NotificationModel.Comment(
+              notificationId: userData['notificationId'] ?? '',
+              senderName: userData['senderName'] ?? 'Unknown',
+              message: userData['message'] ?? '',
+              notDate: userData['notDate'] ?? '',
+              postId: userData['postId'] ?? '',
+              postOwnerId: userData['postOwnerId'] ?? '',
+            );
+            tempNotificationsList.add(notification);
+          } else if (userData.containsKey('followerId')) {
+            NotificationModel notification = NotificationModel.Follow(
+              notificationId: userData['notificationId'],
+              followerId: userData['followerId'] ?? '',
+              notDate: userData['notDate'] ?? '',
+              followerName: userData['followerName'] ?? 'Unknown',
+              followedId: userData['followedId'] ?? '',
+            );
+            tempNotificationsList.add(notification);
+          }
         });
-        await Future.wait(futures);
+
         setState(() {
-          followersList = tempFollowersList;
+          notificationList = tempNotificationsList;
         });
       } else {
-        print("No followers found for userId: ${widget.userId}");
+        print("No notifications found for userId: ${widget.userId}");
       }
     } catch (error) {
-      print("Error loading followers: $error");
+      print("Error loading notifications: $error");
     }
   }
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -182,29 +187,29 @@ class _UserFollowers extends State<UserFollowers>{
                   Expanded(
                     flex: 1,
                     child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          IconButton(
-                            onPressed: (){
-                              Navigator.pop(context);
-                            },
-                            icon: Icon(Icons.arrow_back,size: 30,),
-                          ),
-                        ],
-                      ),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        IconButton(
+                          onPressed: (){
+                            Navigator.pop(context);
+                          },
+                          icon: Icon(Icons.arrow_back,size: 30,),
+                        ),
+                      ],
+                    ),
                   ),
                   Expanded(
-                      flex: 9,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text("Followers", textAlign: TextAlign.center, style: TextStyle(
-                            fontFamily: 'DM Serif Display',
-                            fontSize: 26,
-                          ),
-                          ),
-                        ],
-                      ),
+                    flex: 9,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text("Notifications", textAlign: TextAlign.center, style: TextStyle(
+                          fontFamily: 'DM Serif Display',
+                          fontSize: 26,
+                        ),
+                        ),
+                      ],
+                    ),
                   )
                 ],
               ),
@@ -212,33 +217,47 @@ class _UserFollowers extends State<UserFollowers>{
                 primary: false,
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
-                itemCount: followersList.length,
+                itemCount: notificationList.length,
                 itemBuilder: (context, index) {
-                  Follower follower = followersList[index];
-                  return ListTile(
-                    leading: GestureDetector(
-                      onTap: (){
-                        Navigator.push(context,
-                            MaterialPageRoute(builder: (context) => UserViewProfile(followerId: follower.id),
+                  NotificationModel notification = notificationList[index];
+                  if (notification.type == 'comment') {
+                    return ListTile(
+                      leading: Icon(Icons.comment, color: Colors.black),
+                      title: Text(notification.message ?? ''),
+                      trailing: Text(notification.notDate ?? ''),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UserPostView(
+                              userId: notification.postOwnerId ?? '',
+                              postId: notification.postId ?? '',
                             ),
-                        );
-                      },
-                      child: CircleAvatar(
-                        backgroundImage: follower.userPhotoUrl.isNotEmpty ?
-                        NetworkImage(follower.userPhotoUrl):
-                        AssetImage('assets/small_logo.png') as ImageProvider,
-                      ),
-                    ),
-                    title: GestureDetector(
-                      onTap: (){
-                        Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => UserViewProfile(followerId: follower.id),
                           ),
                         );
                       },
-                      child:Text(follower.name),
-                    ),
-                  );
+                    );
+                  } else if (notification.type == 'follow') {
+                    return ListTile(
+                      leading: Icon(Icons.person, color: Colors.black),
+                      title: Text(notification.followerName != null
+                          ? '${notification.followerName} started following you.' : 'New follower!'),
+                      trailing: Text(notification.notDate ?? ''),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UserViewProfile(
+                              followerId: notification.followerId ?? '',
+                            ),
+                          ),
+                        );
+                      },
+
+                    );
+                  } else {
+                    return Container();
+                  }
                 },
               ),
             ],

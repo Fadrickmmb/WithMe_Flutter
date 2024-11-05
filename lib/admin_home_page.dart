@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:withme_flutter/admin_search_page.dart';
 import 'admin_create_user.dart';
+import 'admin_profile_page.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -51,6 +52,16 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   );
                 },
                 child: Text('To Search'),
+              ),
+              SizedBox(height: 20.0),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => AdminProfilePage()),
+                  );
+                },
+                child: Text('To Profile'),
               ),
             ],
           ),

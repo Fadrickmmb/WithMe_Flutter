@@ -13,6 +13,7 @@ import 'admin_home_page.dart';
 import 'admin_post_view.dart';
 import 'admin_profile_page.dart';
 import 'admin_search_page.dart';
+import 'mod_home_page.dart';
 import 'post_model.dart';
 import 'user_post.dart';
 
@@ -303,16 +304,54 @@ class _AdminViewProfileState extends State<AdminViewProfile> {
     await checkSuspendStatus();
   }
 
-  void _onItemTapped(int index) {
+  Future<void> _onItemTapped(int index) async {
     setState(() {
       _selectedIndex = index;
     });
 
     if (index == 0) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => AdminHomePage()),
-      );
+      final FirebaseAuth auth = FirebaseAuth.instance;
+      final User? user = auth.currentUser;
+
+      if (user != null) {
+        try {
+          final DatabaseReference adminRef = FirebaseDatabase.instance.ref().child('admin/${user.uid}');
+          final DataSnapshot adminSnapshot = await adminRef.get();
+
+          if (adminSnapshot.exists) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AdminHomePage()),
+            );
+            return;
+          }
+
+          final DatabaseReference modRef = FirebaseDatabase.instance.ref().child('mod/${user.uid}');
+          final DataSnapshot modSnapshot = await modRef.get();
+
+          if (modSnapshot.exists) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ModHomePage()),
+            );
+            return;
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("User role not found.")),
+          );
+
+        } catch (e) {
+          print("Error checking user role: $e");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to load user role.")),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("User not logged in.")),
+        );
+      }
     } else if (index == 1) {
       Navigator.push(
         context,
@@ -362,16 +401,15 @@ class _AdminViewProfileState extends State<AdminViewProfile> {
                     Container(
                       padding: EdgeInsets.fromLTRB(0,0,10,0),
                       alignment: Alignment.centerRight,
-                      child: Image.asset('assets/withme_yummy.png', height:30),
+                      child: Icon(Icons.menu),
                     ),
                     Container(
                       alignment: Alignment.centerRight,
-                      child: Image.asset('assets/withme_comment.png', height:30),
+                      child: Icon(Icons.notifications),
                     ),
                   ],
                 ),
               ),
-              //insert content here
               Container(
                 alignment: Alignment.center,
                 padding: EdgeInsets.fromLTRB(0, 50, 0, 0),

@@ -11,6 +11,7 @@ class User {
   late String? userPhotoUrl;
   late String? userBio;
   late Map<String, Post>? posts;
+  late Map<String, Notification>? notifications;
 
   User.empty();
 
@@ -28,8 +29,12 @@ class User {
     required this.numberFollowing,
     required this.userPhotoUrl,
     required this.userBio,
-    required this.posts});
+    required this.posts,
+    required this.notifications});
 
   Map<String, Post>? getPosts() => posts;
   setPosts(Map<String, Post> posts) => this.posts = posts;
+
+  Map<String, Notification>? getNotifications() => notifications;
+  setNotifications(Map<String, Notification> notifications) => this.notifications = notifications;
 }

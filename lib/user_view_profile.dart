@@ -48,6 +48,7 @@ class _UserViewProfile extends State<UserViewProfile>{
     _fetchNumberFollowers();
     _fetchNumberFollowing();
     checkFollowStatus();
+    _checkUserReported();
   }
 
   Future<void> _fetchUserAvatar() async {
@@ -240,6 +241,11 @@ class _UserViewProfile extends State<UserViewProfile>{
         .child(userId)
         .child("followers")
         .child(user!.uid);
+    final DatabaseReference notificationRef = FirebaseDatabase.instance
+        .ref().child('users/${followerId}/notifications');
+    final DateTime today = DateTime.now();
+    final String formattedDate = "${today.year.toString()}-${today.month
+        .toString().padLeft(2,'0')}-${today.day.toString().padLeft(2,'0')}";
 
     final snapshot = await followingReference.once();
     if (snapshot.snapshot.exists) {
@@ -251,45 +257,19 @@ class _UserViewProfile extends State<UserViewProfile>{
     } else {
       await followingReference.set(true);
       await followersReference.set(true);
+
+      String? notificationId = notificationRef.push().key;
+      await notificationRef.child(notificationId!).set({
+        'notificationId': notificationId ?? "",
+        'followerId': userId,
+        'notDate': formattedDate,
+        'followerName': user.displayName ?? 'Anonymous',
+        'message': '${user.displayName ?? 'Anonymous'} started following you.',
+      });
+
       setState(() {
         followStatus = "Unfollow";
       });
-    }
-  }
-
-  Future<void> _reportUser(BuildContext context) async{
-    final DatabaseReference reportUserRef = FirebaseDatabase.instance
-        .ref().child('reportedUsers');
-    final String? reportId = reportUserRef.push().key;
-    final FirebaseAuth auth = FirebaseAuth.instance;
-    final User? user = auth.currentUser;
-
-    if (reportId != null) {
-      final Report reportUser = Report.reportUser(
-        reportId: reportId,
-        userId: followerId,
-        userReportingId: user?.uid,
-      );
-
-      try {
-        await reportUserRef.child(reportId).set({
-          'reportId': reportUser.reportId,
-          'userId': reportUser.userId,
-          'userReportingId': reportUser.userReportingId,
-        });
-        setState(() {
-          reportUserStatus = "User reported.";
-          isReported = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Post reported successfully.")),
-        );
-        Navigator.of(context).pop();
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error reporting post: $e")),
-        );
-      }
     }
   }
 
@@ -316,8 +296,8 @@ class _UserViewProfile extends State<UserViewProfile>{
               Icon(Icons.warning_amber,color: Colors.white,),
               SizedBox(height: 20),
               Text("Are you sure you want to report this user?",style: TextStyle(
-                  color: Colors.white,
-                ),
+                color: Colors.white,
+              ),
               ),
               SizedBox(height: 20),
               Row(
@@ -343,6 +323,81 @@ class _UserViewProfile extends State<UserViewProfile>{
         );
       },
     );
+  }
+
+  Future<void> _reportUser(BuildContext context) async{
+    final DatabaseReference reportUserRef = FirebaseDatabase.instance
+        .ref().child('reportedUsers');
+    final String? reportId = reportUserRef.push().key;
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    if (reportId != null) {
+      final Report reportUser = Report.reportUser(
+        reportId: reportId,
+        userId: followerId,
+        userReportingId: user?.uid,
+      );
+
+      try {
+        await reportUserRef.child(reportId).set({
+          'reportId': reportUser.reportId,
+          'userId': reportUser.userId,
+          'userReportingId': reportUser.userReportingId,
+        });
+        setState(() {
+          reportUserStatus = "Reported.";
+          isReported = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Post reported successfully.")),
+        );
+        Navigator.of(context).pop();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error reporting post: $e")),
+        );
+      }
+    }
+  }
+
+  Future<void> _checkUserReported() async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    if (user != null) {
+      final Query reportUserRef = FirebaseDatabase.instance.ref()
+          .child('reportedUsers').orderByChild('userReportingId')
+          .equalTo(user.uid);
+
+      try {
+        final DataSnapshot snapshot = await reportUserRef.get();
+        bool alreadyReported = false;
+
+        if (snapshot.exists) {
+          final reports = snapshot.value as Map<dynamic, dynamic>?;
+          if (reports != null) {
+            for (var report in reports.values) {
+              if (report['userId'] == widget.followerId) {
+                alreadyReported = true;
+                break;
+              }
+            }
+          }
+        }
+
+        setState(() {
+          isReported = !alreadyReported;
+          reportUserStatus = alreadyReported ? "Reported" : "Report user";
+        });
+
+      } catch (e) {
+        print("Error checking if user is already reported: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to check report status.")),
+        );
+      }
+    }
   }
 
   void _onItemTapped(int index) {
@@ -404,11 +459,7 @@ class _UserViewProfile extends State<UserViewProfile>{
                     Container(
                       padding: EdgeInsets.fromLTRB(0,0,10,0),
                       alignment: Alignment.centerRight,
-                      child: Image.asset('assets/withme_yummy.png', height:30),
-                    ),
-                    Container(
-                      alignment: Alignment.centerRight,
-                      child: Image.asset('assets/withme_comment.png', height:30),
+                      child: Icon(Icons.notifications),
                     ),
                   ],
                 ),

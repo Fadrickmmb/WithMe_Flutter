@@ -6,6 +6,7 @@ import 'package:withme_flutter/user_edit_profile.dart';
 import 'package:withme_flutter/user_followers.dart';
 import 'package:withme_flutter/user_following.dart';
 import 'package:withme_flutter/user_home_page.dart';
+import 'package:withme_flutter/user_notifications.dart';
 import 'package:withme_flutter/user_post_view.dart';
 import 'package:withme_flutter/user_search_page.dart';
 import 'post_model.dart';
@@ -222,14 +223,17 @@ class _UserProfilePage extends State<UserProfilePage>{
                       ),
                     ),
                     Expanded(child: SizedBox.shrink()),
-                    Container(
-                      padding: EdgeInsets.fromLTRB(0,0,10,0),
-                      alignment: Alignment.centerRight,
-                      child: Image.asset('assets/withme_yummy.png', height:30),
-                    ),
-                    Container(
-                      alignment: Alignment.centerRight,
-                      child: Image.asset('assets/withme_comment.png', height:30),
+                    GestureDetector(onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => UserNotifications(userId: userId)),
+                        );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.fromLTRB(0, 0, 10, 0),
+                        alignment: Alignment.centerRight,
+                        child: Icon(Icons.notifications),
+                      ),
                     ),
                   ],
                 ),
