@@ -241,6 +241,11 @@ class _UserViewProfile extends State<UserViewProfile>{
         .child(userId)
         .child("followers")
         .child(user!.uid);
+    final DatabaseReference notificationRef = FirebaseDatabase.instance
+        .ref().child('users/${followerId}/notifications');
+    final DateTime today = DateTime.now();
+    final String formattedDate = "${today.year.toString()}-${today.month
+        .toString().padLeft(2,'0')}-${today.day.toString().padLeft(2,'0')}";
 
     final snapshot = await followingReference.once();
     if (snapshot.snapshot.exists) {
@@ -252,6 +257,16 @@ class _UserViewProfile extends State<UserViewProfile>{
     } else {
       await followingReference.set(true);
       await followersReference.set(true);
+
+      String? notificationId = notificationRef.push().key;
+      await notificationRef.child(notificationId!).set({
+        'notificationId': notificationId ?? "",
+        'followerId': userId,
+        'notDate': formattedDate,
+        'followerName': user.displayName ?? 'Anonymous',
+        'message': '${user.displayName ?? 'Anonymous'} started following you.',
+      });
+
       setState(() {
         followStatus = "Unfollow";
       });
@@ -444,11 +459,7 @@ class _UserViewProfile extends State<UserViewProfile>{
                     Container(
                       padding: EdgeInsets.fromLTRB(0,0,10,0),
                       alignment: Alignment.centerRight,
-                      child: Image.asset('assets/withme_yummy.png', height:30),
-                    ),
-                    Container(
-                      alignment: Alignment.centerRight,
-                      child: Image.asset('assets/withme_comment.png', height:30),
+                      child: Icon(Icons.notifications),
                     ),
                   ],
                 ),

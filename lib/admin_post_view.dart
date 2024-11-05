@@ -424,13 +424,13 @@ class _AdminPostView extends State<AdminPostView> {
                         ),
                         Expanded(child: SizedBox.shrink()),
                         Container(
-                          padding: EdgeInsets.fromLTRB(0, 0, 10, 0),
+                          padding: EdgeInsets.fromLTRB(0,0,10,0),
                           alignment: Alignment.centerRight,
-                          child: Image.asset('assets/withme_yummy.png', height: 30),
+                          child: Icon(Icons.menu),
                         ),
                         Container(
                           alignment: Alignment.centerRight,
-                          child: Image.asset('assets/withme_comment.png', height: 30),
+                          child: Icon(Icons.notifications),
                         ),
                       ],
                     ),

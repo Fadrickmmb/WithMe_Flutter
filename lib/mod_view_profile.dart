@@ -362,13 +362,8 @@ class _ModViewProfileState extends State<ModViewProfile> {
                     ),
                     Expanded(child: SizedBox.shrink()),
                     Container(
-                      padding: EdgeInsets.fromLTRB(0,0,10,0),
                       alignment: Alignment.centerRight,
-                      child: Image.asset('assets/withme_yummy.png', height:30),
-                    ),
-                    Container(
-                      alignment: Alignment.centerRight,
-                      child: Image.asset('assets/withme_comment.png', height:30),
+                      child: Icon(Icons.notifications),
                     ),
                   ],
                 ),

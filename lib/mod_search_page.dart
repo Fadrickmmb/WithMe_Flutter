@@ -73,7 +73,7 @@ class _ModSearchPageState extends State<ModSearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Search'),
+        title: const Text('Mod Search'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

@@ -9,6 +9,7 @@ import 'package:withme_flutter/user_edit_profile.dart';
 import 'package:withme_flutter/user_home_page.dart';
 import 'package:withme_flutter/user_profile_page.dart';
 import 'package:withme_flutter/user_search_page.dart';
+import 'package:withme_flutter/user_notifications.dart';
 
 import 'comment_model.dart';
 
@@ -137,12 +138,13 @@ class _UserPostView extends State<UserPostView> {
     final user = auth.currentUser;
     final DatabaseReference postReference = FirebaseDatabase.instance
         .ref().child('users/${widget.userId}/posts/${widget.postId}/comments');
+    final DatabaseReference notificationRef = FirebaseDatabase.instance
+        .ref().child('users/${widget.userId}/notifications');
 
     if(user != null) {
       final String commentId = postReference.push().key ?? "";
       final DateTime today = DateTime.now();
-      final String formattedDate = "${today.year.toString()}-${today.month.toString().padLeft(2,'0')}-${today.day.toString().padLeft(2,'0')}"
-          "${today.hour.toString().padLeft(2,'0')}:${today.minute.toString().padLeft(2,'0')}";
+      final String formattedDate = "${today.year.toString()}-${today.month.toString().padLeft(2,'0')}-${today.day.toString().padLeft(2,'0')}";
       final commentInfo = Comment.full(
         name: user.displayName ?? 'Anonymous',
         text: commentText,
@@ -161,6 +163,18 @@ class _UserPostView extends State<UserPostView> {
           'userId': commentInfo.userId,
           'postId': commentInfo.postId,
         });
+
+        String? notificationId = notificationRef.push().key;
+        await notificationRef.child(notificationId!).set({
+          'notificationId': notificationId ?? "",
+          'senderName': user.displayName ?? 'Anonymous',
+          'message': '${user.displayName ??
+              'Anonymous'} commented on your post.',
+          'notDate': formattedDate,
+          'postId': widget.postId,
+          'postOwnerId': widget.userId
+        });
+
         setState(() {
           comments.add(Comment.partial(
               name: commentInfo.name,
@@ -174,7 +188,6 @@ class _UserPostView extends State<UserPostView> {
     } else {
       print("User is not logged in.");
     }
-
   }
 
   void _showPostDialog(BuildContext context) {
@@ -506,13 +519,9 @@ class _UserPostView extends State<UserPostView> {
                         ),
                         Expanded(child: SizedBox.shrink()),
                         Container(
-                          padding: EdgeInsets.fromLTRB(0, 0, 10, 0),
+                          padding: EdgeInsets.fromLTRB(0,0,10,0),
                           alignment: Alignment.centerRight,
-                          child: Image.asset('assets/withme_yummy.png', height: 30),
-                        ),
-                        Container(
-                          alignment: Alignment.centerRight,
-                          child: Image.asset('assets/withme_comment.png', height: 30),
+                          child: Icon(Icons.notifications),
                         ),
                       ],
                     ),
