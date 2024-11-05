@@ -518,11 +518,6 @@ class _UserPostView extends State<UserPostView> {
                           ),
                         ),
                         Expanded(child: SizedBox.shrink()),
-                        Container(
-                          padding: EdgeInsets.fromLTRB(0,0,10,0),
-                          alignment: Alignment.centerRight,
-                          child: Icon(Icons.notifications),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 20),

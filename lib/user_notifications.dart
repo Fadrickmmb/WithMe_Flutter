@@ -115,7 +115,6 @@ class _UserNotifications extends State<UserNotifications>{
     }
   }
 
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -172,10 +171,17 @@ class _UserNotifications extends State<UserNotifications>{
                       ),
                     ),
                     Expanded(child: SizedBox.shrink()),
-                    Container(
-                      padding: EdgeInsets.fromLTRB(0,0,10,0),
-                      alignment: Alignment.centerRight,
-                      child: Icon(Icons.notifications),
+                    GestureDetector(onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => UserNotifications(userId: userId)),
+                      );
+                    },
+                      child: Container(
+                        padding: EdgeInsets.fromLTRB(0, 0, 10, 0),
+                        alignment: Alignment.centerRight,
+                        child: Icon(Icons.notifications),
+                      ),
                     ),
                   ],
                 ),
